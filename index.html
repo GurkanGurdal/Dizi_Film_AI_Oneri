@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Yapay zeka destekli dizi ve film öneri platformu. Ruh halinize ve tercihlerinize göre kişiselleştirilmiş öneriler alın.">
+    <title>🎬 AI Film & Dizi Öneri</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Background Animation -->
+    <div class="bg-animation">
+        <div class="bg-gradient"></div>
+        <div class="bg-particles"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">🎬</span>
+                <h1>AI Film & Dizi Öneri</h1>
+            </div>
+            <p class="tagline">Yapay zeka ile kişiselleştirilmiş öneriler</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Content Type Toggle -->
+            <section class="section content-type-section">
+                <h2 class="section-title">📺 Ne İzlemek İstiyorsun?</h2>
+                <div class="toggle-container">
+                    <span class="toggle-label" data-type="film">🎞️ Film</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="contentTypeToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label" data-type="dizi">📺 Dizi</span>
+                </div>
+            </section>
+
+            <!-- Categories -->
+            <section class="section categories-section">
+                <h2 class="section-title">🎭 Kategoriler</h2>
+                <p class="section-subtitle">Birden fazla seçebilirsin</p>
+                <div class="categories-grid">
+                    <button class="category-card" data-category="aksiyon">
+                        <span class="category-icon">💥</span>
+                        <span class="category-name">Aksiyon</span>
+                    </button>
+                    <button class="category-card" data-category="komedi">
+                        <span class="category-icon">😂</span>
+                        <span class="category-name">Komedi</span>
+                    </button>
+                    <button class="category-card" data-category="dram">
+                        <span class="category-icon">🎭</span>
+                        <span class="category-name">Dram</span>
+                    </button>
+                    <button class="category-card" data-category="korku">
+                        <span class="category-icon">👻</span>
+                        <span class="category-name">Korku</span>
+                    </button>
+                    <button class="category-card" data-category="bilim-kurgu">
+                        <span class="category-icon">🚀</span>
+                        <span class="category-name">Bilim Kurgu</span>
+                    </button>
+                    <button class="category-card" data-category="romantik">
+                        <span class="category-icon">💕</span>
+                        <span class="category-name">Romantik</span>
+                    </button>
+                    <button class="category-card" data-category="animasyon">
+                        <span class="category-icon">🎨</span>
+                        <span class="category-name">Animasyon</span>
+                    </button>
+                    <button class="category-card" data-category="belgesel">
+                        <span class="category-icon">🌍</span>
+                        <span class="category-name">Belgesel</span>
+                    </button>
+                    <button class="category-card" data-category="gerilim">
+                        <span class="category-icon">😰</span>
+                        <span class="category-name">Gerilim</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Mood Selection -->
+            <section class="section mood-section">
+                <h2 class="section-title">😊 Şu An Nasıl Hissediyorsun?</h2>
+                <div class="mood-grid">
+                    <button class="mood-btn" data-mood="mutlu">
+                        <span class="mood-emoji">😄</span>
+                        <span class="mood-text">Mutlu</span>
+                    </button>
+                    <button class="mood-btn" data-mood="uzgun">
+                        <span class="mood-emoji">😢</span>
+                        <span class="mood-text">Üzgün</span>
+                    </button>
+                    <button class="mood-btn" data-mood="heyecanli">
+                        <span class="mood-emoji">🤩</span>
+                        <span class="mood-text">Heyecanlı</span>
+                    </button>
+                    <button class="mood-btn" data-mood="rahat">
+                        <span class="mood-emoji">😌</span>
+                        <span class="mood-text">Rahat</span>
+                    </button>
+                    <button class="mood-btn" data-mood="nostaljik">
+                        <span class="mood-emoji">🥹</span>
+                        <span class="mood-text">Nostaljik</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Platform Selection -->
+            <section class="section platforms-section">
+                <h2 class="section-title">📱 Hangi Platformları Kullanıyorsun?</h2>
+                <div class="platforms-grid">
+                    <label class="platform-card">
+                        <input type="checkbox" value="netflix" class="platform-checkbox">
+                        <span class="platform-content">
+                            <span class="platform-logo">🔴</span>
+                            <span class="platform-name">Netflix</span>
+                        </span>
+                    </label>
+                    <label class="platform-card">
+                        <input type="checkbox" value="disney" class="platform-checkbox">
+                        <span class="platform-content">
+                            <span class="platform-logo">🏰</span>
+                            <span class="platform-name">Disney+</span>
+                        </span>
+                    </label>
+                    <label class="platform-card">
+                        <input type="checkbox" value="amazon" class="platform-checkbox">
+                        <span class="platform-content">
+                            <span class="platform-logo">📦</span>
+                            <span class="platform-name">Prime Video</span>
+                        </span>
+                    </label>
+                    <label class="platform-card">
+                        <input type="checkbox" value="blutv" class="platform-checkbox">
+                        <span class="platform-content">
+                            <span class="platform-logo">🔵</span>
+                            <span class="platform-name">BluTV</span>
+                        </span>
+                    </label>
+                    <label class="platform-card">
+                        <input type="checkbox" value="exxen" class="platform-checkbox">
+                        <span class="platform-content">
+                            <span class="platform-logo">🟣</span>
+                            <span class="platform-name">Exxen</span>
+                        </span>
+                    </label>
+                    <label class="platform-card">
+                        <input type="checkbox" value="mubi" class="platform-checkbox">
+                        <span class="platform-content">
+                            <span class="platform-logo">🎬</span>
+                            <span class="platform-name">MUBI</span>
+                        </span>
+                    </label>
+                </div>
+            </section>
+
+            <!-- Prompt Input -->
+            <section class="section prompt-section">
+                <h2 class="section-title">✨ Bize Biraz Daha Anlat</h2>
+                <div class="prompt-container">
+                    <textarea id="userPrompt" class="prompt-input"
+                        placeholder="Örnek: Geçen hafta The Office bitirdim, benzer bir komedi istiyorum. Ya da: Yağmurlu bir gün için rahatlatıcı bir film öner..."
+                        rows="4"></textarea>
+                    <button id="getRecommendation" class="recommend-btn">
+                        <span class="btn-icon">🎯</span>
+                        <span class="btn-text">Öneri Al</span>
+                        <span class="btn-loading"></span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Results -->
+            <section class="section results-section" id="resultsSection">
+                <h2 class="section-title">🎬 Öneriler</h2>
+                <div class="results-container" id="resultsContainer">
+                    <!-- Results will be inserted here -->
+                </div>
+            </section>
+
+            <!-- History -->
+            <section class="section history-section" id="historySection">
+                <div class="history-header">
+                    <h2 class="section-title">📜 Geçmiş Öneriler</h2>
+                    <button id="clearHistory" class="clear-history-btn">🗑️ Temizle</button>
+                </div>
+                <div class="history-container" id="historyContainer">
+                    <!-- History items will be inserted here -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Powered by <span class="gemini-badge">✨ Gemini AI</span></p>
+        </footer>
+    </div>
+
+    <!-- Movie Detail Modal -->
+    <div class="modal-overlay" id="movieModal">
+        <div class="modal-container">
+            <button class="modal-close" id="modalClose">&times;</button>
+            <div class="modal-content">
+                <div class="modal-backdrop" id="modalBackdrop"></div>
+                <div class="modal-body">
+                    <div class="modal-poster" id="modalPoster"></div>
+                    <div class="modal-info">
+                        <h2 class="modal-title" id="modalTitle">Film Adı</h2>
+                        <div class="modal-meta">
+                            <span class="modal-year" id="modalYear">2023</span>
+                            <span class="modal-rating" id="modalRating">⭐ 8.5</span>
+                        </div>
+                        <p class="modal-description" id="modalDescription">Film açıklaması burada görünecek...</p>
+                        <div class="modal-reason-box" id="modalReasonBox">
+                            <span class="reason-label">💡 Neden Önerildi:</span>
+                            <p class="modal-reason" id="modalReason">Öneri sebebi...</p>
+                        </div>
+                        <div class="modal-platforms-section">
+                            <h3>📺 İzleme Platformları</h3>
+                            <div class="modal-platforms" id="modalPlatforms">
+                                <!-- Platform links will be inserted here -->
+                            </div>
+                        </div>
+                        <a href="#" class="modal-tmdb-link" id="modalTmdbLink" target="_blank">
+                            🔗 TMDB'de Görüntüle
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

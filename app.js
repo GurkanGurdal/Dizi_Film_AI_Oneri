@@ -6,7 +6,7 @@
 // Production için: 'https://your-app-name.onrender.com'
 const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000'
-    : 'https://dizi-film-ai-backend.onrender.com'; // Deploy sonrası bu URL güncellenecek
+    : 'https://dizi-film-ai-oneri.onrender.com';
 
 // TMDB Image Base URL (poster gösterimi için)
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';

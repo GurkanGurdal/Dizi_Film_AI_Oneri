@@ -1,25 +1,14 @@
 // ========================================
 // Configuration
 // ========================================
-// OpenRouter API (Free model access)
-const OPENROUTER_API_KEY = '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';
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+// Backend API URL - Render.com'da deploy edilecek
+// Localhost için: 'http://localhost:3000'
+// Production için: 'https://your-app-name.onrender.com'
+const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000'
+    : 'https://dizi-film-ai-backend.onrender.com'; // Deploy sonrası bu URL güncellenecek
 
-// Available free models to try
-const FREE_MODELS = [
-    'openai/gpt-4.1-mini',
-    'google/gemma-3-1b-it:free',
-    'google/gemma-3-4b-it:free',
-    'meta-llama/llama-3.2-3b-instruct:free',
-    'mistralai/mistral-7b-instruct:free'
-];
-
-// Current model index
-let currentModelIndex = 0;
-
-// TMDB API
-const TMDB_API_KEY = '7b38ff183fa7e0c194098fec83b5f1ed';
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+// TMDB Image Base URL (poster gösterimi için)
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 
 // ========================================
@@ -197,49 +186,18 @@ async function getRecommendation() {
 
     try {
         // Try different models if one fails
-        let response = null;
-        let lastError = null;
-        
-        for (let i = 0; i < FREE_MODELS.length; i++) {
-            const modelIndex = (currentModelIndex + i) % FREE_MODELS.length;
-            const model = FREE_MODELS[modelIndex];
-            
-            try {
-                response = await fetch(OPENROUTER_API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                        'HTTP-Referer': window.location.href,
-                        'X-Title': 'AI Film Öneri'
-                    },
-                    body: JSON.stringify({
-                        model: model,
-                        messages: [
-                            { role: 'user', content: prompt }
-                        ],
-                        max_tokens: 4096,
-                        temperature: 0.7
-                    })
-                });
+        // Call backend API
+        const response = await fetch(`${BACKEND_URL}/api/recommend`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ prompt })
+        });
 
-                if (response.ok) {
-                    currentModelIndex = modelIndex; // Remember working model
-                    break;
-                } else {
-                    const errorData = await response.json().catch(() => ({}));
-                    lastError = errorData.error?.message || `API Hatası: ${response.status}`;
-                    console.log(`Model ${model} failed:`, lastError);
-                    response = null;
-                }
-            } catch (e) {
-                lastError = e.message;
-                console.log(`Model ${model} error:`, e.message);
-            }
-        }
-
-        if (!response) {
-            throw new Error(lastError || 'Tüm modeller başarısız oldu. Lütfen daha sonra tekrar deneyin.');
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `API Hatası: ${response.status}`);
         }
 
         const data = await response.json();
@@ -425,16 +383,16 @@ async function fetchTMDBData(recommendations) {
 
     for (const rec of recommendations) {
         try {
-            // Search for the title on TMDB (try English first for better results)
+            // Search for the title on TMDB via backend
             const searchQuery = rec.title || rec.titleTr;
-            let searchUrl = `${TMDB_BASE_URL}/search/${searchType}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(searchQuery)}`;
+            let searchUrl = `${BACKEND_URL}/api/tmdb/search/${searchType}?query=${encodeURIComponent(searchQuery)}`;
 
             let response = await fetch(searchUrl);
             let data = await response.json();
 
             // If no results, try with Turkish title
             if ((!data.results || data.results.length === 0) && rec.titleTr && rec.titleTr !== rec.title) {
-                searchUrl = `${TMDB_BASE_URL}/search/${searchType}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(rec.titleTr)}`;
+                searchUrl = `${BACKEND_URL}/api/tmdb/search/${searchType}?query=${encodeURIComponent(rec.titleTr)}`;
                 response = await fetch(searchUrl);
                 data = await response.json();
             }
@@ -446,7 +404,7 @@ async function fetchTMDBData(recommendations) {
                 const isTurkish = result.original_language === 'tr';
 
                 // Get Turkish details for overview and Turkish poster if Turkish content
-                const detailsTrUrl = `${TMDB_BASE_URL}/${searchType}/${result.id}?api_key=${TMDB_API_KEY}&language=tr-TR`;
+                const detailsTrUrl = `${BACKEND_URL}/api/tmdb/${searchType}/${result.id}?language=tr-TR`;
                 const detailsTrResponse = await fetch(detailsTrUrl);
                 const detailsTrData = await detailsTrResponse.json();
 
@@ -463,7 +421,7 @@ async function fetchTMDBData(recommendations) {
                 }
 
                 // Get watch providers
-                const providersUrl = `${TMDB_BASE_URL}/${searchType}/${result.id}/watch/providers?api_key=${TMDB_API_KEY}`;
+                const providersUrl = `${BACKEND_URL}/api/tmdb/${searchType}/${result.id}/watch/providers`;
                 const providersResponse = await fetch(providersUrl);
                 const providersData = await providersResponse.json();
                 const trProviders = providersData.results?.TR;

@@ -964,6 +964,8 @@ body {
     opacity: 0;
     transition: opacity 0.3s ease;
     z-index: 0;
+    border-radius: 50px;
+    -webkit-border-radius: 50px;
 }
 
 .category-card:hover {

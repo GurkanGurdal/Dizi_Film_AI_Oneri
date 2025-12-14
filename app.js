@@ -305,6 +305,50 @@ function setupHeroSlider() {
                 activeProgress.style.animationPlayState = 'running';
             }
         });
+        
+        // Touch/Swipe support for mobile
+        let touchStartX = 0;
+        let touchEndX = 0;
+        let isSwiping = false;
+        
+        slider.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            isSwiping = true;
+            isPaused = true;
+            const activeProgress = indicatorsContainer.querySelector('.hero-indicator.active .progress-fill');
+            if (activeProgress) {
+                activeProgress.style.animationPlayState = 'paused';
+            }
+        }, { passive: true });
+        
+        slider.addEventListener('touchmove', (e) => {
+            if (!isSwiping) return;
+            touchEndX = e.changedTouches[0].screenX;
+        }, { passive: true });
+        
+        slider.addEventListener('touchend', (e) => {
+            if (!isSwiping) return;
+            touchEndX = e.changedTouches[0].screenX;
+            const swipeThreshold = 50;
+            const diff = touchStartX - touchEndX;
+            
+            if (Math.abs(diff) > swipeThreshold) {
+                if (diff > 0) {
+                    // Swipe left - next slide
+                    nextSlide(true);
+                } else {
+                    // Swipe right - prev slide
+                    prevSlide(true);
+                }
+            }
+            
+            isSwiping = false;
+            isPaused = false;
+            const activeProgress = indicatorsContainer.querySelector('.hero-indicator.active .progress-fill');
+            if (activeProgress) {
+                activeProgress.style.animationPlayState = 'running';
+            }
+        }, { passive: true });
     }
 
     // Start first slide
@@ -483,10 +527,12 @@ function triggerCategoryEffect(category, card) {
     categoryName.classList.add('effect-hidden');
     categoryIcon.classList.add('effect-hidden');
     
-    // Card'ın pozisyonunu al
+    // Card'ın pozisyonunu al - scroll pozisyonunu da ekle
     const rect = card.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
+    const scrollX = window.scrollX || window.pageXOffset;
+    const scrollY = window.scrollY || window.pageYOffset;
+    const centerX = rect.left + rect.width / 2 + scrollX;
+    const centerY = rect.top + rect.height / 2 + scrollY;
     
     // Kategoriye özel efekt
     switch(category) {
@@ -531,7 +577,7 @@ function createParticle(className, emoji, x, y) {
     const particle = document.createElement('span');
     particle.className = `effect-particle ${className}`;
     particle.textContent = emoji;
-    particle.style.position = 'fixed';
+    particle.style.position = 'absolute';
     particle.style.left = x + 'px';
     particle.style.top = y + 'px';
     particle.style.transform = 'translate(-50%, -50%)';

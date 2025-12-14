@@ -498,7 +498,7 @@ textarea {
     }
     
     .title-ai {
-        font-size: 1.5rem;
+        font-size: 1.8rem;
     }
     
     .logo-icon {
@@ -1055,7 +1055,7 @@ textarea {
 
 /* Genel parçacık stili */
 .effect-particle {
-    position: fixed;
+    position: absolute;
     font-size: 1.5rem;
     pointer-events: none;
     z-index: 10000;

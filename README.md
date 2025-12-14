@@ -4,7 +4,7 @@ Yapay zeka destekli kişiselleştirilmiş film ve dizi öneri platformu. Google 
 
 ## 🌐 Demo
 
-**[Canlı Demo](https://gurkangurdal.github.io/Dizi_Film_AI_Oneri/)**
+👉 https://gurkangurdal.github.io/Dizi_Film_AI_Oneri/
 
 ## ✨ Özellikler
 
@@ -36,76 +36,6 @@ Yapay zeka destekli kişiselleştirilmiş film ve dizi öneri platformu. Google 
 - Google Gemini AI API
 - CORS & dotenv
 
-## 🚀 Kurulum
-
-### Gereksinimler
-- Node.js 18.0.0 veya üzeri
-- Google Gemini API anahtarı
-
-### Adımlar
-
-1. **Repoyu klonlayın**
-```bash
-git clone https://github.com/GurkanGurdal/Dizi_Film_AI_Oneri.git
-cd Dizi_Film_AI_Oneri
-```
-
-2. **Backend bağımlılıklarını yükleyin**
-```bash
-cd server
-npm install
-```
-
-3. **Ortam değişkenlerini ayarlayın**
-```bash
-cp .env.example .env
-```
-`.env` dosyasını düzenleyip Gemini API anahtarınızı ekleyin:
-```
-GEMINI_API_KEY=your_api_key_here
-PORT=5000
-```
-
-4. **Sunucuyu başlatın**
-```bash
-npm start
-```
-
-5. **Frontend'i açın**
-- `index.html` dosyasını tarayıcıda açın
-- Veya bir HTTP server kullanın:
-```bash
-# Ana dizinde
-python -m http.server 5500
-```
-
-## 📁 Proje Yapısı
-
-```
-dizi-film-oneri/
-├── index.html          # Ana HTML dosyası
-├── styles.css          # Tüm stiller ve animasyonlar
-├── app.js              # Frontend JavaScript
-├── assets/             # Görseller ve ikonlar
-│   ├── movie_ai.png    # AI maskot (ön)
-│   ├── movie_ai_left.png
-│   ├── movie_ai_right.png
-│   └── ...
-├── server/             # Backend
-│   ├── server.js       # Express sunucusu
-│   ├── package.json
-│   ├── .env.example
-│   └── .gitignore
-└── README.md
-```
-
-## 🔑 API Anahtarı Alma
-
-1. [Google AI Studio](https://makersuite.google.com/app/apikey) adresine gidin
-2. Google hesabınızla giriş yapın
-3. "Create API Key" butonuna tıklayın
-4. Oluşturulan anahtarı `.env` dosyasına ekleyin
-
 ## 🎨 Öne Çıkan Tasarım Özellikleri
 
 - **Glassmorphism** - Buzlu cam efektli modern kartlar
@@ -123,18 +53,6 @@ dizi-film-oneri/
 5. "AI'dan Öneri İste" butonuna tıklayın
 6. AI'ın size özel önerilerini görün!
 
-## 🤝 Katkıda Bulunma
-
-1. Bu repoyu fork edin
-2. Yeni bir branch oluşturun (`git checkout -b feature/yeniOzellik`)
-3. Değişikliklerinizi commit edin (`git commit -m 'Yeni özellik eklendi'`)
-4. Branch'inizi push edin (`git push origin feature/yeniOzellik`)
-5. Pull Request açın
-
-## 📄 Lisans
-
-Bu proje MIT lisansı altında lisanslanmıştır.
-
 ## 👨‍💻 Geliştirici
 
 **Gürkan Gürdal**
@@ -146,3 +64,4 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 <div align="center">
   <p>⭐ Bu projeyi beğendiyseniz yıldız vermeyi unutmayın!</p>
 </div>
+

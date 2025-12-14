@@ -484,6 +484,7 @@ body {
     padding: var(--spacing-xl);
     margin-bottom: var(--spacing-lg);
     transition: var(--transition-normal);
+    overflow: visible;
 }
 
 .section:hover {
@@ -532,6 +533,7 @@ body {
     font-size: 1rem;
     top: -6px;
     left: -8px;
+    -webkit-animation: sparkle 2s ease-in-out infinite;
     animation: sparkle 2s ease-in-out infinite;
 }
 
@@ -539,6 +541,7 @@ body {
     font-size: 0.65rem;
     top: -10px;
     left: 6px;
+    -webkit-animation: sparkle 2s ease-in-out infinite 0.4s;
     animation: sparkle 2s ease-in-out infinite 0.4s;
 }
 
@@ -546,6 +549,7 @@ body {
     font-size: 0.5rem;
     top: 0px;
     left: 10px;
+    -webkit-animation: sparkle 2s ease-in-out infinite 0.8s;
     animation: sparkle 2s ease-in-out infinite 0.8s;
 }
 
@@ -927,6 +931,8 @@ body {
     flex-wrap: wrap;
     gap: 12px;
     justify-content: center;
+    overflow: visible;
+    padding: 20px 0;
 }
 
 .category-card {
@@ -942,7 +948,7 @@ body {
     transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     font-family: inherit;
     color: var(--text-secondary);
-    overflow: hidden;
+    overflow: visible;
 }
 
 /* Gradient background on hover/select */
@@ -1015,14 +1021,16 @@ body {
     position: absolute;
     font-size: 1.5rem;
     pointer-events: none;
-    z-index: 10;
+    z-index: 100;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    -webkit-transform: translate(-50%, -50%);
 }
 
 /* Aksiyon - Patlama parçacıkları */
 .explosion-particle {
+    -webkit-animation: explodeOut 0.8s ease-out forwards;
     animation: explodeOut 0.8s ease-out forwards;
 }
 
@@ -1042,7 +1050,9 @@ body {
 
 /* Komedi - Gülen yüzler zıplama */
 .laugh-particle {
+    -webkit-animation: laughJump 1s ease-out forwards;
     animation: laughJump 1s ease-out forwards;
+    -webkit-animation-delay: var(--delay);
     animation-delay: var(--delay);
 }
 
@@ -1079,8 +1089,9 @@ body {
     height: 100%;
     background: radial-gradient(circle, transparent 0%, rgba(0, 0, 0, 0.95) 70%);
     border-radius: 50px;
+    -webkit-animation: darknessEffect 1s ease-out forwards;
     animation: darknessEffect 1s ease-out forwards;
-    z-index: 5;
+    z-index: 50;
     pointer-events: none;
 }
 
@@ -1093,9 +1104,11 @@ body {
 
 /* Korku - Hayalet parçacıkları */
 .ghost-particle {
+    -webkit-animation: ghostAppear 0.8s ease-out forwards;
     animation: ghostAppear 0.8s ease-out forwards;
+    -webkit-animation-delay: var(--delay);
     animation-delay: var(--delay);
-    z-index: 15;
+    z-index: 100;
 }
 
 @keyframes ghostAppear {
@@ -1126,6 +1139,7 @@ body {
 
 /* Romantik - Kalpler yüzme */
 .heart-particle {
+    -webkit-animation: heartFloat 1.2s ease-out forwards;
     animation: heartFloat 1.2s ease-out forwards;
 }
 
@@ -1150,6 +1164,7 @@ body {
 
 /* Bilim Kurgu - Uzaya fırlama */
 .space-particle {
+    -webkit-animation: launchToSpace 1s ease-out forwards;
     animation: launchToSpace 1s ease-out forwards;
 }
 
@@ -1170,6 +1185,7 @@ body {
 
 /* Animasyon - Renkli dönen parçacıklar */
 .color-particle {
+    -webkit-animation: colorSpin 0.8s ease-out forwards;
     animation: colorSpin 0.8s ease-out forwards;
 }
 
@@ -1190,6 +1206,7 @@ body {
 
 /* Dram - Düşen gözyaşları */
 .drama-particle {
+    -webkit-animation: tearDrop 1.2s ease-in forwards;
     animation: tearDrop 1.2s ease-in forwards;
 }
 
@@ -1210,6 +1227,7 @@ body {
 
 /* Belgesel - Yörünge */
 .globe-particle {
+    -webkit-animation: orbit 1.2s ease-out forwards;
     animation: orbit 1.2s ease-out forwards;
 }
 
@@ -1234,6 +1252,7 @@ body {
 
 /* Gerilim - Flash efekti */
 .category-card.tension-flash {
+    -webkit-animation: tensionFlash 0.6s ease-out;
     animation: tensionFlash 0.6s ease-out;
 }
 
@@ -1249,6 +1268,7 @@ body {
 
 /* Gerilim - Tehlike parçacıkları */
 .tension-particle {
+    -webkit-animation: tensionShake 0.7s ease-out forwards;
     animation: tensionShake 0.7s ease-out forwards;
 }
 
@@ -2852,6 +2872,7 @@ body {
     border: 1px solid var(--bg-glass-border);
     border-radius: var(--radius-xl);
     overflow: hidden;
+    display: block;
 }
 
 /* Hero Slider */
@@ -2860,6 +2881,8 @@ body {
     width: 100%;
     height: 400px;
     overflow: hidden;
+    display: block;
+    min-height: 250px;
 }
 
 .hero-slides {
@@ -3116,11 +3139,13 @@ body {
     width: calc(50% - 6px);
     background: var(--accent-gradient);
     border-radius: var(--radius-full);
+    -webkit-transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 0;
 }
 
 .trending-tabs[data-active="tv"] .trend-tab-indicator {
+    -webkit-transform: translateX(calc(100% + 4px));
     transform: translateX(calc(100% + 4px));
 }
 
@@ -3317,6 +3342,21 @@ body {
 @media (max-width: 768px) {
     .hero-slider {
         height: 300px;
+        min-height: 200px;
+        display: block !important;
+    }
+    
+    .hero-slides {
+        display: flex !important;
+    }
+    
+    .hero-slide {
+        min-width: 100%;
+        display: block !important;
+    }
+    
+    .trending-banner {
+        display: block !important;
     }
 
     .hero-content {

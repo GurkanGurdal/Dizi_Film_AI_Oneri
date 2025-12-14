@@ -77,6 +77,21 @@ body {
     overflow-x: hidden;
 }
 
+/* Disable tap highlight on mobile */
+button,
+a,
+.category-card,
+.mood-btn,
+.toggle-btn,
+.tab-btn,
+.content-type-toggle,
+.card,
+[role="button"],
+[onclick] {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+}
+
 /* ========================================
    Background Animation
 ======================================== */

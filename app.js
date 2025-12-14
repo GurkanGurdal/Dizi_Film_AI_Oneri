@@ -1247,4 +1247,24 @@ function setupModalListeners() {
 document.addEventListener('DOMContentLoaded', () => {
     init();
     setupModalListeners();
+    disableTapHighlight();
 });
+
+// Disable tap highlight on mobile
+function disableTapHighlight() {
+    document.addEventListener('touchstart', function() {}, {passive: true});
+    
+    // Force remove tap highlight from all interactive elements
+    const style = document.createElement('style');
+    style.textContent = `
+        * {
+            -webkit-tap-highlight-color: transparent !important;
+            -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+            tap-highlight-color: transparent !important;
+        }
+        *:focus {
+            outline: none !important;
+        }
+    `;
+    document.head.appendChild(style);
+}

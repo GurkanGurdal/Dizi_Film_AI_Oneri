@@ -36,6 +36,44 @@ Yapay zeka destekli kişiselleştirilmiş film ve dizi öneri platformu. Google 
 - Google Gemini AI API
 - CORS & dotenv
 
+## 🚀 Kurulum
+
+### Gereksinimler
+- Node.js 18.0.0 veya üzeri
+- Google Gemini API anahtarı
+
+### Adımlar
+
+1. **Repoyu klonlayın**
+```bash
+git clone https://github.com/GurkanGurdal/Dizi_Film_AI_Oneri.git
+cd Dizi_Film_AI_Oneri
+```
+
+2. **Backend bağımlılıklarını yükleyin**
+```bash
+cd server
+npm install
+```
+
+3. **Ortam değişkenlerini ayarlayın**
+```bash
+cp .env.example .env
+```
+`.env` dosyasını düzenleyip Gemini API anahtarınızı ekleyin:
+```
+GEMINI_API_KEY=your_api_key_here
+PORT=5000
+```
+
+4. **Sunucuyu başlatın**
+```bash
+npm start
+```
+
+5. **Frontend'i açın**
+- `index.html` dosyasını tarayıcıda açın
+
 ## 🎨 Öne Çıkan Tasarım Özellikleri
 
 - **Glassmorphism** - Buzlu cam efektli modern kartlar

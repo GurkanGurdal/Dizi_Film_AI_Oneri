@@ -18,7 +18,6 @@ let state = {
     contentType: 'film', // 'film' or 'dizi'
     selectedCategories: [],
     selectedMood: null,
-    selectedPlatforms: [],
     history: []
 };
 
@@ -31,7 +30,6 @@ const elements = {
     contentTypeInput: document.getElementById('contentTypeInput'),
     categoryCards: document.querySelectorAll('.category-card'),
     moodButtons: document.querySelectorAll('.mood-btn'),
-    platformCheckboxes: document.querySelectorAll('.platform-checkbox'),
     userPrompt: document.getElementById('userPrompt'),
     recommendBtn: document.getElementById('getRecommendation'),
     resultsSection: document.getElementById('resultsSection'),
@@ -55,9 +53,14 @@ function init() {
 // Trending Banner
 // ========================================
 let currentTrendingType = 'movie';
+let heroSlideIndex = 0;
+let heroSlideInterval = null;
+let heroData = [];
 
 async function loadTrendingContent(type) {
     const track = document.getElementById('trendingTrack');
+    const heroSlides = document.getElementById('heroSlides');
+    const heroIndicators = document.getElementById('heroIndicators');
     if (!track) return;
 
     currentTrendingType = type;
@@ -75,12 +78,88 @@ async function loadTrendingContent(type) {
         </div>
     `).join('');
 
-    try {
-        const response = await fetch(`${BACKEND_URL}/api/tmdb/trending/${type}/week`);
-        const data = await response.json();
+    if (heroSlides) {
+        heroSlides.innerHTML = '<div class="hero-slide"><div class="hero-backdrop" style="background: linear-gradient(135deg, #1a1a2e, #16213e);"></div></div>';
+    }
 
-        if (data.results && data.results.length > 0) {
-            track.innerHTML = data.results.slice(0, 10).map((item, index) => {
+    try {
+        // Orijinal poster için dil parametresi olmadan çek
+        const originalResponse = await fetch(`${BACKEND_URL}/api/tmdb/trending/${type}/week`);
+        const originalData = await originalResponse.json();
+        
+        // Türkçe başlık/açıklama için tr-TR ile çek
+        const trResponse = await fetch(`${BACKEND_URL}/api/tmdb/trending/${type}/week?language=tr-TR`);
+        const trData = await trResponse.json();
+
+        if (originalData.results && originalData.results.length > 0) {
+            // Orijinal ve Türkçe verileri birleştir
+            heroData = originalData.results.slice(0, 5).map((item, index) => {
+                const trItem = trData.results[index] || item;
+                return {
+                    ...item,
+                    title: trItem.title || trItem.name, // Türkçe başlık
+                    name: trItem.name || trItem.title,
+                    overview: trItem.overview || item.overview, // Türkçe açıklama
+                    // poster_path ve backdrop_path orijinal kalacak
+                };
+            });
+            
+            // Render Hero Slider
+            if (heroSlides && heroIndicators) {
+                heroSlides.innerHTML = heroData.map((item, index) => {
+                    const title = item.title || item.name;
+                    const year = (item.release_date || item.first_air_date || '').substring(0, 4);
+                    const backdrop = item.backdrop_path 
+                        ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}`
+                        : null;
+                    const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
+                    const overview = item.overview || 'Açıklama bulunamadı.';
+
+                    return `
+                        <div class="hero-slide" data-id="${item.id}" data-type="${type}">
+                            <div class="hero-backdrop" style="background-image: url('${backdrop}')"></div>
+                            <div class="hero-gradient"></div>
+                            <div class="hero-content">
+                                <div class="hero-rank-badge">
+                                    <span>🏆</span>
+                                    <span>#${index + 1} Bu Hafta</span>
+                                </div>
+                                <h2 class="hero-title">${title}</h2>
+                                <div class="hero-meta">
+                                    <span class="hero-rating">⭐ ${rating}</span>
+                                    <span>${year}</span>
+                                    <span>${type === 'movie' ? 'Film' : 'Dizi'}</span>
+                                </div>
+                                <p class="hero-overview">${overview}</p>
+                                <button class="hero-btn" onclick="openTrendingModal('${item.id}', '${type}')">
+                                    <span>Detayları Gör</span>
+                                    <span>→</span>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Render indicators
+                heroIndicators.innerHTML = heroData.map((_, index) => `
+                    <div class="hero-indicator ${index === 0 ? 'active' : ''}" data-index="${index}"></div>
+                `).join('');
+
+                // Setup hero slider
+                setupHeroSlider();
+            }
+
+            // Render small cards - orijinal poster, Türkçe başlık
+            const smallCards = originalData.results.slice(0, 10).map((item, index) => {
+                const trItem = trData.results[index] || item;
+                return {
+                    ...item,
+                    title: trItem.title || trItem.name,
+                    name: trItem.name || trItem.title,
+                };
+            });
+            
+            track.innerHTML = smallCards.map((item, index) => {
                 const title = item.title || item.name;
                 const year = (item.release_date || item.first_air_date || '').substring(0, 4);
                 const poster = item.poster_path 
@@ -114,19 +193,144 @@ async function loadTrendingContent(type) {
     }
 }
 
+function setupHeroSlider() {
+    const slides = document.getElementById('heroSlides');
+    const indicatorsContainer = document.getElementById('heroIndicators');
+    const prevBtn = document.querySelector('.hero-prev');
+    const nextBtn = document.querySelector('.hero-next');
+
+    if (!slides || heroData.length === 0) return;
+
+    heroSlideIndex = 0;
+    let isPaused = false;
+
+    // Render indicators with progress bars inside
+    indicatorsContainer.innerHTML = heroData.map((_, index) => `
+        <div class="hero-indicator ${index === 0 ? 'active' : ''}" data-index="${index}">
+            <div class="progress-fill"></div>
+        </div>
+    `).join('');
+
+    function startProgressAnimation(index, paused = false) {
+        const indicators = indicatorsContainer.querySelectorAll('.hero-indicator');
+        indicators.forEach((ind, i) => {
+            const progressBar = ind.querySelector('.progress-fill');
+            if (progressBar) {
+                // Reset animation
+                progressBar.style.animation = 'none';
+                progressBar.style.width = '0%';
+                progressBar.offsetHeight; // Force reflow
+                
+                if (i === index) {
+                    progressBar.style.animation = 'indicatorProgress 5s linear forwards';
+                    progressBar.style.animationPlayState = paused ? 'paused' : 'running';
+                }
+            }
+        });
+    }
+
+    function goToSlide(index, triggeredByUser = false) {
+        heroSlideIndex = index;
+        if (heroSlideIndex >= heroData.length) heroSlideIndex = 0;
+        if (heroSlideIndex < 0) heroSlideIndex = heroData.length - 1;
+
+        slides.style.transform = `translateX(-${heroSlideIndex * 100}%)`;
+
+        // Update active indicator
+        const indicators = indicatorsContainer.querySelectorAll('.hero-indicator');
+        indicators.forEach((ind, i) => {
+            ind.classList.toggle('active', i === heroSlideIndex);
+        });
+
+        // Start progress animation - if triggered by user while hovering, start paused
+        startProgressAnimation(heroSlideIndex, triggeredByUser && isPaused);
+    }
+
+    function nextSlide(triggeredByUser = false) {
+        goToSlide(heroSlideIndex + 1, triggeredByUser);
+    }
+
+    function prevSlide(triggeredByUser = false) {
+        goToSlide(heroSlideIndex - 1, triggeredByUser);
+    }
+
+    // Listen for animation end on progress bars
+    indicatorsContainer.addEventListener('animationend', (e) => {
+        if (e.target.classList.contains('progress-fill') && !isPaused) {
+            nextSlide(false);
+        }
+    });
+
+    // Click on indicators
+    indicatorsContainer.addEventListener('click', (e) => {
+        const indicator = e.target.closest('.hero-indicator');
+        if (indicator) {
+            goToSlide(parseInt(indicator.dataset.index), true);
+        }
+    });
+
+    // Navigation buttons - clone and replace to remove old listeners
+    const newPrevBtn = prevBtn.cloneNode(true);
+    const newNextBtn = nextBtn.cloneNode(true);
+    prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
+    nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
+
+    newPrevBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        prevSlide(true);
+    });
+
+    newNextBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        nextSlide(true);
+    });
+
+    // Pause on hover
+    const slider = document.getElementById('heroSlider');
+    if (slider) {
+        slider.addEventListener('mouseenter', () => {
+            isPaused = true;
+            const activeProgress = indicatorsContainer.querySelector('.hero-indicator.active .progress-fill');
+            if (activeProgress) {
+                activeProgress.style.animationPlayState = 'paused';
+            }
+        });
+        
+        slider.addEventListener('mouseleave', () => {
+            isPaused = false;
+            const activeProgress = indicatorsContainer.querySelector('.hero-indicator.active .progress-fill');
+            if (activeProgress) {
+                activeProgress.style.animationPlayState = 'running';
+            }
+        });
+    }
+
+    // Start first slide
+    goToSlide(0, false);
+}
+
 async function openTrendingModal(id, type) {
     try {
-        const detailsUrl = `${BACKEND_URL}/api/tmdb/${type}/${id}?language=tr-TR`;
-        const response = await fetch(detailsUrl);
-        const data = await response.json();
+        // Orijinal poster için dil parametresi olmadan çek
+        const originalUrl = `${BACKEND_URL}/api/tmdb/${type}/${id}`;
+        const originalResponse = await fetch(originalUrl);
+        const originalData = await originalResponse.json();
 
-        const title = data.title || data.name;
-        const titleTr = title;
-        const year = (data.release_date || data.first_air_date || '').substring(0, 4);
-        const poster = data.poster_path ? `${TMDB_IMAGE_BASE}${data.poster_path}` : null;
-        const backdrop = data.backdrop_path ? `https://image.tmdb.org/t/p/w1280${data.backdrop_path}` : null;
-        const overview = data.overview || 'Açıklama bulunamadı.';
-        const rating = data.vote_average ? data.vote_average.toFixed(1) : null;
+        // Türkçe başlık/açıklama için tr-TR ile çek
+        const trUrl = `${BACKEND_URL}/api/tmdb/${type}/${id}?language=tr-TR`;
+        const trResponse = await fetch(trUrl);
+        const trData = await trResponse.json();
+
+        const title = originalData.title || originalData.name;
+        const titleTr = trData.title || trData.name || title;
+        const year = (originalData.release_date || originalData.first_air_date || '').substring(0, 4);
+        // Orijinal poster ve backdrop kullan
+        const poster = originalData.poster_path ? `${TMDB_IMAGE_BASE}${originalData.poster_path}` : null;
+        const backdrop = originalData.backdrop_path ? `https://image.tmdb.org/t/p/w1280${originalData.backdrop_path}` : null;
+        const overview = trData.overview || originalData.overview || 'Açıklama bulunamadı.';
+        const rating = originalData.vote_average ? originalData.vote_average.toFixed(1) : null;
 
         // Get providers
         const providersUrl = `${BACKEND_URL}/api/tmdb/${type}/${id}/watch/providers`;
@@ -134,7 +338,8 @@ async function openTrendingModal(id, type) {
         const providersData = await providersResponse.json();
         const providers = providersData.results?.TR?.flatrate || [];
 
-        openModal({
+        // Store in currentRecommendations temporarily for modal
+        const tempMovie = {
             id,
             title,
             titleTr,
@@ -143,9 +348,15 @@ async function openTrendingModal(id, type) {
             backdrop,
             overview,
             rating,
+            reason: null, // Trending'de reason yok
             tmdbUrl: `https://www.themoviedb.org/${type}/${id}`,
-            providers
-        });
+            providers,
+            mediaType: type // Film mi Dizi mi
+        };
+
+        // Add to currentRecommendations and open modal
+        currentRecommendations = [tempMovie];
+        openMovieModal(0);
     } catch (error) {
         console.error('Error opening trending modal:', error);
     }
@@ -153,10 +364,14 @@ async function openTrendingModal(id, type) {
 
 function setupTrendingTabs() {
     const tabs = document.querySelectorAll('.trend-tab');
+    const tabsContainer = document.querySelector('.trending-tabs');
+    
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
             tabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
+            // Indicator animasyonu için data-active güncelle
+            tabsContainer.dataset.active = tab.dataset.type;
             loadTrendingContent(tab.dataset.type);
         });
     });
@@ -167,11 +382,24 @@ function setupTrendingTabs() {
     const nextBtn = document.querySelector('.carousel-next');
 
     if (prevBtn && nextBtn && track) {
+        const getScrollAmount = () => {
+            const cards = track.querySelectorAll('.trend-card');
+            if (cards.length === 0) return 300;
+            
+            const card = cards[0];
+            const cardStyle = window.getComputedStyle(card);
+            const cardWidth = card.offsetWidth + parseInt(cardStyle.marginRight || 0);
+            const trackWidth = track.clientWidth;
+            const visibleCards = Math.floor(trackWidth / cardWidth);
+            
+            return cardWidth * Math.max(1, visibleCards);
+        };
+
         prevBtn.addEventListener('click', () => {
-            track.scrollBy({ left: -300, behavior: 'smooth' });
+            track.scrollBy({ left: -getScrollAmount(), behavior: 'smooth' });
         });
         nextBtn.addEventListener('click', () => {
-            track.scrollBy({ left: 300, behavior: 'smooth' });
+            track.scrollBy({ left: getScrollAmount(), behavior: 'smooth' });
         });
     }
 }
@@ -214,13 +442,6 @@ function setupEventListeners() {
         });
     });
 
-    // Platform Selection
-    elements.platformCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', () => {
-            updateSelectedPlatforms();
-        });
-    });
-
     // Get Recommendation
     elements.recommendBtn.addEventListener('click', getRecommendation);
 
@@ -246,6 +467,222 @@ function toggleCategory(category, card) {
     } else {
         state.selectedCategories.push(category);
         card.classList.add('selected');
+        // Yaratıcı animasyon efekti
+        triggerCategoryEffect(category, card);
+    }
+}
+
+// ========================================
+// Creative Category Effects
+// ========================================
+function triggerCategoryEffect(category, card) {
+    const categoryName = card.querySelector('.category-name');
+    const categoryIcon = card.querySelector('.category-icon');
+    
+    // Yazıyı ve iconu gizle
+    categoryName.classList.add('effect-hidden');
+    categoryIcon.classList.add('effect-hidden');
+    
+    // Kategoriye özel efekt
+    switch(category) {
+        case 'aksiyon':
+            createExplosionEffect(card);
+            break;
+        case 'komedi':
+            createLaughEffect(card);
+            break;
+        case 'korku':
+            createHorrorEffect(card);
+            break;
+        case 'romantik':
+            createHeartEffect(card);
+            break;
+        case 'bilim-kurgu':
+            createSpaceEffect(card);
+            break;
+        case 'animasyon':
+            createColorEffect(card);
+            break;
+        case 'dram':
+            createDramaEffect(card);
+            break;
+        case 'belgesel':
+            createGlobeEffect(card);
+            break;
+        case 'gerilim':
+            createTensionEffect(card);
+            break;
+    }
+    
+    // Yazıyı ve iconu geri getir
+    setTimeout(() => {
+        categoryName.classList.remove('effect-hidden');
+        categoryIcon.classList.remove('effect-hidden');
+    }, 800);
+}
+
+// Aksiyon - Patlama parçacıkları
+function createExplosionEffect(card) {
+    const explosions = ['💥', '🔥', '💣', '⚡', '💢'];
+    for (let i = 0; i < 8; i++) {
+        setTimeout(() => {
+            const particle = document.createElement('span');
+            particle.className = 'effect-particle explosion-particle';
+            particle.textContent = explosions[Math.floor(Math.random() * explosions.length)];
+            particle.style.setProperty('--x', (Math.random() - 0.5) * 150 + 'px');
+            particle.style.setProperty('--y', (Math.random() - 0.5) * 150 + 'px');
+            particle.style.setProperty('--r', Math.random() * 360 + 'deg');
+            card.appendChild(particle);
+            setTimeout(() => particle.remove(), 800);
+        }, i * 50);
+    }
+}
+
+// Komedi - Gülen yüzler
+function createLaughEffect(card) {
+    const laughs = ['😂', '🤣', '😆', '😄', '😁', '🤪'];
+    for (let i = 0; i < 6; i++) {
+        setTimeout(() => {
+            const particle = document.createElement('span');
+            particle.className = 'effect-particle laugh-particle';
+            particle.textContent = laughs[Math.floor(Math.random() * laughs.length)];
+            particle.style.setProperty('--x', (Math.random() - 0.5) * 120 + 'px');
+            particle.style.setProperty('--delay', i * 0.1 + 's');
+            card.appendChild(particle);
+            setTimeout(() => particle.remove(), 1000);
+        }, i * 80);
+    }
+}
+
+// Korku - Karanlık ve hayaletler
+function createHorrorEffect(card) {
+    // Karanlık overlay
+    const darkness = document.createElement('div');
+    darkness.className = 'horror-darkness';
+    card.appendChild(darkness);
+    
+    // Hayaletler
+    const ghosts = ['👻', '💀', '🦇', '🕷️', '👁️'];
+    setTimeout(() => {
+        for (let i = 0; i < 5; i++) {
+            setTimeout(() => {
+                const ghost = document.createElement('span');
+                ghost.className = 'effect-particle ghost-particle';
+                ghost.textContent = ghosts[i % ghosts.length];
+                ghost.style.setProperty('--x', (Math.random() - 0.5) * 100 + 'px');
+                ghost.style.setProperty('--delay', i * 0.1 + 's');
+                card.appendChild(ghost);
+                setTimeout(() => ghost.remove(), 800);
+            }, i * 100);
+        }
+    }, 200);
+    
+    setTimeout(() => darkness.remove(), 1000);
+}
+
+// Romantik - Kalpler
+function createHeartEffect(card) {
+    const hearts = ['❤️', '💕', '💖', '💗', '💓', '💘', '💝'];
+    for (let i = 0; i < 10; i++) {
+        setTimeout(() => {
+            const heart = document.createElement('span');
+            heart.className = 'effect-particle heart-particle';
+            heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+            heart.style.setProperty('--x', (Math.random() - 0.5) * 100 + 'px');
+            heart.style.setProperty('--float-x', (Math.random() - 0.5) * 50 + 'px');
+            card.appendChild(heart);
+            setTimeout(() => heart.remove(), 1200);
+        }, i * 60);
+    }
+}
+
+// Bilim Kurgu - Yıldızlar ve gezegenler
+function createSpaceEffect(card) {
+    const space = ['🌟', '⭐', '✨', '🛸', '🌙', '☄️', '🚀', '🪐'];
+    for (let i = 0; i < 8; i++) {
+        setTimeout(() => {
+            const star = document.createElement('span');
+            star.className = 'effect-particle space-particle';
+            star.textContent = space[i % space.length];
+            // Her parçacık farklı açıdan çıksın
+            const angle = (i / 8) * Math.PI * 2;
+            const distance = 60 + Math.random() * 40;
+            star.style.setProperty('--start-x', Math.cos(angle) * 20 + 'px');
+            star.style.setProperty('--start-y', Math.sin(angle) * 20 + 'px');
+            star.style.setProperty('--end-x', Math.cos(angle) * distance + 'px');
+            star.style.setProperty('--end-y', Math.sin(angle) * distance - 80 + 'px');
+            card.appendChild(star);
+            setTimeout(() => star.remove(), 1000);
+        }, i * 70);
+    }
+}
+
+// Animasyon - Renkli parçacıklar
+function createColorEffect(card) {
+    const colors = ['🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '⚪'];
+    for (let i = 0; i < 10; i++) {
+        setTimeout(() => {
+            const color = document.createElement('span');
+            color.className = 'effect-particle color-particle';
+            color.textContent = colors[i % colors.length];
+            const angle = (i / 10) * Math.PI * 2;
+            color.style.setProperty('--x', Math.cos(angle) * 80 + 'px');
+            color.style.setProperty('--y', Math.sin(angle) * 80 + 'px');
+            card.appendChild(color);
+            setTimeout(() => color.remove(), 800);
+        }, i * 50);
+    }
+}
+
+// Dram - Gözyaşları ve maskeler
+function createDramaEffect(card) {
+    const drama = ['🎭', '😢', '😭', '💧', '🥀'];
+    for (let i = 0; i < 6; i++) {
+        setTimeout(() => {
+            const tear = document.createElement('span');
+            tear.className = 'effect-particle drama-particle';
+            tear.textContent = drama[Math.floor(Math.random() * drama.length)];
+            tear.style.setProperty('--x', (Math.random() - 0.5) * 80 + 'px');
+            card.appendChild(tear);
+            setTimeout(() => tear.remove(), 1200);
+        }, i * 100);
+    }
+}
+
+// Belgesel - Dünya ve doğa
+function createGlobeEffect(card) {
+    const nature = ['🌍', '🌎', '🌏', '🌿', '🦁', '🐘', '🦅'];
+    for (let i = 0; i < 7; i++) {
+        setTimeout(() => {
+            const item = document.createElement('span');
+            item.className = 'effect-particle globe-particle';
+            item.textContent = nature[i % nature.length];
+            const angle = (i / 7) * Math.PI * 2;
+            item.style.setProperty('--orbit-x', Math.cos(angle) * 70 + 'px');
+            item.style.setProperty('--orbit-y', Math.sin(angle) * 40 + 'px');
+            card.appendChild(item);
+            setTimeout(() => item.remove(), 1200);
+        }, i * 80);
+    }
+}
+
+// Gerilim - Titreşim ve tehlike
+function createTensionEffect(card) {
+    const tension = ['⚠️', '❗', '😰', '😱', '🔪'];
+    
+    // Flash efekti
+    card.classList.add('tension-flash');
+    setTimeout(() => card.classList.remove('tension-flash'), 600);
+    
+    for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+            const item = document.createElement('span');
+            item.className = 'effect-particle tension-particle';
+            item.textContent = tension[i % tension.length];
+            item.style.setProperty('--x', (Math.random() - 0.5) * 100 + 'px');
+            card.appendChild(item);
+            setTimeout(() => item.remove(), 700);
+        }, i * 100);
     }
 }
 
@@ -263,15 +700,6 @@ function selectMood(btn) {
         btn.classList.add('selected');
         state.selectedMood = mood;
     }
-}
-
-function updateSelectedPlatforms() {
-    state.selectedPlatforms = [];
-    elements.platformCheckboxes.forEach(checkbox => {
-        if (checkbox.checked) {
-            state.selectedPlatforms.push(checkbox.value);
-        }
-    });
 }
 
 // ========================================
@@ -375,19 +803,6 @@ function buildPrompt(userPrompt) {
 
     const mood = state.selectedMood ? moodMap[state.selectedMood] : null;
 
-    const platformMap = {
-        'netflix': 'Netflix',
-        'disney': 'Disney+',
-        'amazon': 'Amazon Prime Video',
-        'blutv': 'BluTV',
-        'exxen': 'Exxen',
-        'mubi': 'MUBI'
-    };
-
-    const platforms = state.selectedPlatforms.length > 0
-        ? state.selectedPlatforms.map(p => platformMap[p]).join(', ')
-        : null;
-
     // Güncel tarih bilgisi
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
@@ -405,12 +820,8 @@ Tercihler:
         prompt += `\n- Ruh Hali: ${mood}`;
     }
 
-    if (platforms) {
-        prompt += `\n- Platformlar: ${platforms}`;
-    }
-
     if (userPrompt) {
-        prompt += `\n\n⚠️ EN ÖNEMLİ - KULLANICININ İSTEĞİ (bunu diğer tercihlerden öncelikli tut): "${userPrompt}"
+        prompt += `\n\n⚠️ KULLANICININ İSTEĞİ (bunu diğer tercihlerden öncelikli tut): "${userPrompt}"
 Eğer kullanıcının isteği yukarıdaki seçimlerle çelişiyorsa, KULLANICININ İSTEĞİNE GÖRE hareket et!`;
     }
 
@@ -504,6 +915,7 @@ function parseRecommendations(text) {
 // ========================================
 // TMDB API Functions
 // ========================================
+
 async function fetchTMDBData(recommendations) {
     const enrichedData = [];
     const searchType = state.contentType === 'film' ? 'movie' : 'tv';
@@ -552,6 +964,7 @@ async function fetchTMDBData(recommendations) {
                 const providersResponse = await fetch(providersUrl);
                 const providersData = await providersResponse.json();
                 const trProviders = providersData.results?.TR;
+                const allProviders = trProviders?.flatrate || trProviders?.buy || trProviders?.rent || [];
 
                 enrichedData.push({
                     id: result.id,
@@ -564,10 +977,10 @@ async function fetchTMDBData(recommendations) {
                     rating: result.vote_average ? result.vote_average.toFixed(1) : null,
                     reason: rec.reason,
                     tmdbUrl: `https://www.themoviedb.org/${searchType}/${result.id}`,
-                    providers: trProviders?.flatrate || trProviders?.buy || trProviders?.rent || []
+                    providers: allProviders,
+                    mediaType: searchType
                 });
             } else {
-                // If not found on TMDB, still add it without poster
                 enrichedData.push({
                     id: null,
                     title: rec.title,
@@ -578,7 +991,8 @@ async function fetchTMDBData(recommendations) {
                     rating: null,
                     reason: rec.reason,
                     tmdbUrl: `https://www.google.com/search?q=${encodeURIComponent(rec.title + ' izle')}`,
-                    providers: []
+                    providers: [],
+                    mediaType: searchType
                 });
             }
         } catch (error) {
@@ -591,7 +1005,8 @@ async function fetchTMDBData(recommendations) {
                 poster: null,
                 reason: rec.reason,
                 tmdbUrl: `https://www.google.com/search?q=${encodeURIComponent(rec.title + ' izle')}`,
-                providers: []
+                providers: [],
+                mediaType: searchType
             });
         }
     }
@@ -616,10 +1031,6 @@ function displayPosterCards(recommendations) {
             ? `<div class="rating-badge">⭐ ${rec.rating}</div>`
             : '';
 
-        const providerIcons = rec.providers.slice(0, 3).map(p =>
-            `<img src="https://image.tmdb.org/t/p/original${p.logo_path}" alt="${p.provider_name}" class="provider-icon" title="${p.provider_name}">`
-        ).join('');
-
         return `
             <div class="poster-card" onclick="openMovieModal(${index})">
                 <div class="poster-image" style="${posterStyle}">
@@ -630,7 +1041,6 @@ function displayPosterCards(recommendations) {
                     <h3 class="poster-title">${rec.titleTr || rec.title}</h3>
                     ${rec.year ? `<span class="poster-year">${rec.year}</span>` : ''}
                     ${rec.reason ? `<p class="poster-reason">${rec.reason}</p>` : ''}
-                    ${providerIcons ? `<div class="poster-providers">${providerIcons}</div>` : ''}
                 </div>
                 <div class="poster-overlay">
                     <span class="detail-hint">Detay için tıkla</span>
@@ -678,7 +1088,6 @@ function saveToHistory(prompt, recommendations) {
         categories: [...state.selectedCategories],
         mood: state.selectedMood,
         contentType: state.contentType,
-        platforms: [...state.selectedPlatforms],
         recommendations: recommendations,
         date: new Date().toLocaleString('tr-TR')
     };
@@ -757,8 +1166,15 @@ function openMovieModal(index) {
     const modalDescription = document.getElementById('modalDescription');
     const modalReason = document.getElementById('modalReason');
     const modalReasonBox = document.getElementById('modalReasonBox');
-    const modalPlatforms = document.getElementById('modalPlatforms');
     const modalTmdbLink = document.getElementById('modalTmdbLink');
+    const modalWatchBtn = document.getElementById('modalWatchBtn');
+    const modalContentType = document.getElementById('modalContentType');
+
+    // Set content type (Film / Dizi)
+    if (modalContentType) {
+        const contentTypeText = movie.mediaType === 'tv' ? 'Dizi' : 'Film';
+        modalContentType.textContent = contentTypeText;
+    }
 
     // Set backdrop and poster
     if (movie.backdrop) {
@@ -791,11 +1207,12 @@ function openMovieModal(index) {
         modalReasonBox.style.display = 'none';
     }
 
+    // Set Watch button (Google search)
+    const searchTitle = movie.titleTr || movie.title;
+    modalWatchBtn.href = `https://www.google.com/search?q=${encodeURIComponent(searchTitle + ' izle')}`;
+
     // Set TMDB link
     modalTmdbLink.href = movie.tmdbUrl;
-
-    // Set platforms
-    renderPlatformLinks(modalPlatforms, movie.providers);
 
     // Show modal
     modal.classList.add('active');
@@ -806,45 +1223,6 @@ function closeMovieModal() {
     const modal = document.getElementById('movieModal');
     modal.classList.remove('active');
     document.body.style.overflow = '';
-}
-
-function renderPlatformLinks(container, providers) {
-    if (!providers || providers.length === 0) {
-        container.innerHTML = `
-            <div class="no-platforms">
-                <p>🔍 Bu içerik için Türkiye'de izleme platformu bulunamadı.</p>
-                <p>Google'da arayabilirsiniz.</p>
-            </div>
-        `;
-        return;
-    }
-
-    // Platform URL mappings
-    const platformUrls = {
-        'Netflix': 'https://www.netflix.com/search?q=',
-        'Disney Plus': 'https://www.disneyplus.com/search',
-        'Amazon Prime Video': 'https://www.primevideo.com/search/?phrase=',
-        'Apple TV Plus': 'https://tv.apple.com/search?term=',
-        'BluTV': 'https://www.blutv.com/arama?q=',
-        'Exxen': 'https://www.exxen.com/',
-        'MUBI': 'https://mubi.com/tr/search?query=',
-        'Gain': 'https://www.gain.tv/',
-        'YouTube': 'https://www.youtube.com/results?search_query='
-    };
-
-    const linksHTML = providers.map(provider => {
-        const searchUrl = platformUrls[provider.provider_name] ||
-            `https://www.google.com/search?q=${encodeURIComponent(document.getElementById('modalTitle').textContent + ' ' + provider.provider_name + ' izle')}`;
-
-        return `
-            <a href="${searchUrl}" target="_blank" class="platform-link" rel="noopener noreferrer">
-                <img src="https://image.tmdb.org/t/p/original${provider.logo_path}" alt="${provider.provider_name}">
-                <span>${provider.provider_name}</span>
-            </a>
-        `;
-    }).join('');
-
-    container.innerHTML = linksHTML;
 }
 
 // Setup modal event listeners

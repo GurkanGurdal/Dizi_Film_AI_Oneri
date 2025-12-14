@@ -88,9 +88,22 @@
 
         <!-- Trending Banner -->
         <section class="trending-banner">
+            <div class="hero-slider" id="heroSlider">
+                <div class="hero-slides" id="heroSlides">
+                    <!-- Dinamik olarak doldurulacak -->
+                </div>
+                <div class="hero-controls">
+                    <div class="hero-indicators" id="heroIndicators"></div>
+                </div>
+                <div class="hero-nav">
+                    <button class="hero-nav-btn hero-prev">❮</button>
+                    <button class="hero-nav-btn hero-next">❯</button>
+                </div>
+            </div>
             <div class="trending-header">
                 <h2 class="trending-title">🔥 Bu Hafta Trend</h2>
                 <div class="trending-tabs">
+                    <div class="trend-tab-indicator"></div>
                     <button class="trend-tab active" data-type="movie">Filmler</button>
                     <button class="trend-tab" data-type="tv">Diziler</button>
                 </div>
@@ -198,58 +211,18 @@
                 </div>
             </section>
 
-            <!-- Platform Selection -->
-            <section class="section platforms-section">
-                <h2 class="section-title">📱 Hangi Platformları Kullanıyorsun?</h2>
-                <div class="platforms-grid">
-                    <label class="platform-card">
-                        <input type="checkbox" value="netflix" class="platform-checkbox">
-                        <span class="platform-content">
-                            <span class="platform-logo">🔴</span>
-                            <span class="platform-name">Netflix</span>
-                        </span>
-                    </label>
-                    <label class="platform-card">
-                        <input type="checkbox" value="disney" class="platform-checkbox">
-                        <span class="platform-content">
-                            <span class="platform-logo">🏰</span>
-                            <span class="platform-name">Disney+</span>
-                        </span>
-                    </label>
-                    <label class="platform-card">
-                        <input type="checkbox" value="amazon" class="platform-checkbox">
-                        <span class="platform-content">
-                            <span class="platform-logo">📦</span>
-                            <span class="platform-name">Prime Video</span>
-                        </span>
-                    </label>
-                    <label class="platform-card">
-                        <input type="checkbox" value="blutv" class="platform-checkbox">
-                        <span class="platform-content">
-                            <span class="platform-logo">🔵</span>
-                            <span class="platform-name">BluTV</span>
-                        </span>
-                    </label>
-                    <label class="platform-card">
-                        <input type="checkbox" value="exxen" class="platform-checkbox">
-                        <span class="platform-content">
-                            <span class="platform-logo">🟣</span>
-                            <span class="platform-name">Exxen</span>
-                        </span>
-                    </label>
-                    <label class="platform-card">
-                        <input type="checkbox" value="mubi" class="platform-checkbox">
-                        <span class="platform-content">
-                            <span class="platform-logo">🎬</span>
-                            <span class="platform-name">MUBI</span>
-                        </span>
-                    </label>
-                </div>
-            </section>
-
             <!-- Prompt Input -->
             <section class="section prompt-section">
-                <h2 class="section-title">✨ Bize Biraz Daha Anlat</h2>
+                <h2 class="section-title">
+                    <span class="title-sparkle">
+                        <span class="title-sparkle-stars">
+                            <span>✦</span>
+                            <span>✦</span>
+                            <span>✦</span>
+                        </span>
+                    </span>
+                    Bize Biraz Daha Anlat
+                </h2>
                 <div class="prompt-container">
                     <textarea id="userPrompt" class="prompt-input"
                         placeholder="Örnek: Geçen hafta The Office bitirdim, benzer bir komedi istiyorum. Ya da: Yağmurlu bir gün için rahatlatıcı bir film öner..."
@@ -307,6 +280,7 @@
                     <div class="modal-info">
                         <h2 class="modal-title" id="modalTitle">Film Adı</h2>
                         <div class="modal-meta">
+                            <span class="modal-content-type" id="modalContentType">Film</span>
                             <span class="modal-year" id="modalYear">2023</span>
                             <span class="modal-rating" id="modalRating">⭐ 8.5</span>
                         </div>
@@ -315,15 +289,14 @@
                             <span class="reason-label">💡 Neden Önerildi:</span>
                             <p class="modal-reason" id="modalReason">Öneri sebebi...</p>
                         </div>
-                        <div class="modal-platforms-section">
-                            <h3>📺 İzleme Platformları</h3>
-                            <div class="modal-platforms" id="modalPlatforms">
-                                <!-- Platform links will be inserted here -->
-                            </div>
+                        <div class="modal-actions">
+                            <a href="#" class="modal-watch-btn" id="modalWatchBtn" target="_blank">
+                                <img src="assets/play.png" alt="Play" class="watch-icon"> İzle
+                            </a>
+                            <a href="#" class="modal-tmdb-link" id="modalTmdbLink" target="_blank">
+                                🔗 TMDB'de Görüntüle
+                            </a>
                         </div>
-                        <a href="#" class="modal-tmdb-link" id="modalTmdbLink" target="_blank">
-                            🔗 TMDB'de Görüntüle
-                        </a>
                     </div>
                 </div>
             </div>

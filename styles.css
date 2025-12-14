@@ -1002,15 +1002,22 @@ textarea {
     -webkit-border-radius: 50px;
 }
 
-.category-card:hover {
-    border-color: rgba(99, 102, 241, 0.4);
-    color: var(--text-primary);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15);
-}
+/* Hover effects only for devices with hover capability */
+@media (hover: hover) and (pointer: fine) {
+    .category-card:hover {
+        border-color: rgba(99, 102, 241, 0.4);
+        color: var(--text-primary);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15);
+    }
 
-.category-card:hover::before {
-    opacity: 0.1;
+    .category-card:hover::before {
+        opacity: 0.1;
+    }
+    
+    .category-card:hover .category-icon {
+        transform: scale(1.15) rotate(-5deg);
+    }
 }
 
 .category-card.selected {
@@ -1031,10 +1038,6 @@ textarea {
     position: relative;
     z-index: 1;
     transition: transform 0.3s ease;
-}
-
-.category-card:hover .category-icon {
-    transform: scale(1.15) rotate(-5deg);
 }
 
 .category-card.selected .category-icon {
@@ -1423,17 +1426,24 @@ textarea {
 .mood-btn[data-mood="rahat"] { --mood-color: rgba(74, 222, 128, 0.4); }
 .mood-btn[data-mood="nostaljik"] { --mood-color: rgba(192, 132, 252, 0.4); }
 
-.mood-btn:hover {
-    border-color: rgba(99, 102, 241, 0.4);
-    transform: translateY(-4px);
-    color: var(--text-primary);
-    box-shadow: 
-        0 0 25px rgba(99, 102, 241, 0.3),
-        0 0 50px var(--mood-color, rgba(99, 102, 241, 0.2));
-}
+/* Hover effects only for devices with hover capability */
+@media (hover: hover) and (pointer: fine) {
+    .mood-btn:hover {
+        border-color: rgba(99, 102, 241, 0.4);
+        transform: translateY(-4px);
+        color: var(--text-primary);
+        box-shadow: 
+            0 0 25px rgba(99, 102, 241, 0.3),
+            0 0 50px var(--mood-color, rgba(99, 102, 241, 0.2));
+    }
 
-.mood-btn:hover::before {
-    transform: translate(-50%, -50%) scale(1.5);
+    .mood-btn:hover::before {
+        transform: translate(-50%, -50%) scale(1.5);
+    }
+    
+    .mood-btn:hover .mood-emoji {
+        transform: scale(1.2) rotate(-5deg);
+    }
 }
 
 .mood-btn.selected {
@@ -1490,10 +1500,6 @@ textarea {
     z-index: 1;
     transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-}
-
-.mood-btn:hover .mood-emoji {
-    transform: scale(1.2) rotate(-5deg);
 }
 
 .mood-btn.selected .mood-emoji {

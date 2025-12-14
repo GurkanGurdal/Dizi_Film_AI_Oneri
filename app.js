@@ -483,34 +483,39 @@ function triggerCategoryEffect(category, card) {
     categoryName.classList.add('effect-hidden');
     categoryIcon.classList.add('effect-hidden');
     
+    // Card'ın pozisyonunu al
+    const rect = card.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
     // Kategoriye özel efekt
     switch(category) {
         case 'aksiyon':
-            createExplosionEffect(card);
+            createExplosionEffect(centerX, centerY);
             break;
         case 'komedi':
-            createLaughEffect(card);
+            createLaughEffect(centerX, centerY);
             break;
         case 'korku':
-            createHorrorEffect(card);
+            createHorrorEffect(card, centerX, centerY);
             break;
         case 'romantik':
-            createHeartEffect(card);
+            createHeartEffect(centerX, centerY);
             break;
         case 'bilim-kurgu':
-            createSpaceEffect(card);
+            createSpaceEffect(centerX, centerY);
             break;
         case 'animasyon':
-            createColorEffect(card);
+            createColorEffect(centerX, centerY);
             break;
         case 'dram':
-            createDramaEffect(card);
+            createDramaEffect(centerX, centerY);
             break;
         case 'belgesel':
-            createGlobeEffect(card);
+            createGlobeEffect(centerX, centerY);
             break;
         case 'gerilim':
-            createTensionEffect(card);
+            createTensionEffect(card, centerX, centerY);
             break;
     }
     
@@ -521,42 +526,51 @@ function triggerCategoryEffect(category, card) {
     }, 800);
 }
 
+// Parçacık oluşturucu yardımcı fonksiyon
+function createParticle(className, emoji, x, y) {
+    const particle = document.createElement('span');
+    particle.className = `effect-particle ${className}`;
+    particle.textContent = emoji;
+    particle.style.position = 'fixed';
+    particle.style.left = x + 'px';
+    particle.style.top = y + 'px';
+    particle.style.transform = 'translate(-50%, -50%)';
+    particle.style.pointerEvents = 'none';
+    particle.style.zIndex = '9999';
+    document.body.appendChild(particle);
+    return particle;
+}
+
 // Aksiyon - Patlama parçacıkları
-function createExplosionEffect(card) {
+function createExplosionEffect(centerX, centerY) {
     const explosions = ['💥', '🔥', '💣', '⚡', '💢'];
     for (let i = 0; i < 8; i++) {
         setTimeout(() => {
-            const particle = document.createElement('span');
-            particle.className = 'effect-particle explosion-particle';
-            particle.textContent = explosions[Math.floor(Math.random() * explosions.length)];
+            const particle = createParticle('explosion-particle', explosions[Math.floor(Math.random() * explosions.length)], centerX, centerY);
             particle.style.setProperty('--x', (Math.random() - 0.5) * 150 + 'px');
             particle.style.setProperty('--y', (Math.random() - 0.5) * 150 + 'px');
             particle.style.setProperty('--r', Math.random() * 360 + 'deg');
-            card.appendChild(particle);
             setTimeout(() => particle.remove(), 800);
         }, i * 50);
     }
 }
 
 // Komedi - Gülen yüzler
-function createLaughEffect(card) {
+function createLaughEffect(centerX, centerY) {
     const laughs = ['😂', '🤣', '😆', '😄', '😁', '🤪'];
     for (let i = 0; i < 6; i++) {
         setTimeout(() => {
-            const particle = document.createElement('span');
-            particle.className = 'effect-particle laugh-particle';
-            particle.textContent = laughs[Math.floor(Math.random() * laughs.length)];
+            const particle = createParticle('laugh-particle', laughs[Math.floor(Math.random() * laughs.length)], centerX, centerY);
             particle.style.setProperty('--x', (Math.random() - 0.5) * 120 + 'px');
             particle.style.setProperty('--delay', i * 0.1 + 's');
-            card.appendChild(particle);
             setTimeout(() => particle.remove(), 1000);
         }, i * 80);
     }
 }
 
 // Korku - Karanlık ve hayaletler
-function createHorrorEffect(card) {
-    // Karanlık overlay
+function createHorrorEffect(card, centerX, centerY) {
+    // Karanlık overlay (bu card'a eklenmeli)
     const darkness = document.createElement('div');
     darkness.className = 'horror-darkness';
     card.appendChild(darkness);
@@ -566,12 +580,9 @@ function createHorrorEffect(card) {
     setTimeout(() => {
         for (let i = 0; i < 5; i++) {
             setTimeout(() => {
-                const ghost = document.createElement('span');
-                ghost.className = 'effect-particle ghost-particle';
-                ghost.textContent = ghosts[i % ghosts.length];
+                const ghost = createParticle('ghost-particle', ghosts[i % ghosts.length], centerX, centerY);
                 ghost.style.setProperty('--x', (Math.random() - 0.5) * 100 + 'px');
                 ghost.style.setProperty('--delay', i * 0.1 + 's');
-                card.appendChild(ghost);
                 setTimeout(() => ghost.remove(), 800);
             }, i * 100);
         }
@@ -581,29 +592,24 @@ function createHorrorEffect(card) {
 }
 
 // Romantik - Kalpler
-function createHeartEffect(card) {
+function createHeartEffect(centerX, centerY) {
     const hearts = ['❤️', '💕', '💖', '💗', '💓', '💘', '💝'];
     for (let i = 0; i < 10; i++) {
         setTimeout(() => {
-            const heart = document.createElement('span');
-            heart.className = 'effect-particle heart-particle';
-            heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+            const heart = createParticle('heart-particle', hearts[Math.floor(Math.random() * hearts.length)], centerX, centerY);
             heart.style.setProperty('--x', (Math.random() - 0.5) * 100 + 'px');
             heart.style.setProperty('--float-x', (Math.random() - 0.5) * 50 + 'px');
-            card.appendChild(heart);
             setTimeout(() => heart.remove(), 1200);
         }, i * 60);
     }
 }
 
 // Bilim Kurgu - Yıldızlar ve gezegenler
-function createSpaceEffect(card) {
+function createSpaceEffect(centerX, centerY) {
     const space = ['🌟', '⭐', '✨', '🛸', '🌙', '☄️', '🚀', '🪐'];
     for (let i = 0; i < 8; i++) {
         setTimeout(() => {
-            const star = document.createElement('span');
-            star.className = 'effect-particle space-particle';
-            star.textContent = space[i % space.length];
+            const star = createParticle('space-particle', space[i % space.length], centerX, centerY);
             // Her parçacık farklı açıdan çıksın
             const angle = (i / 8) * Math.PI * 2;
             const distance = 60 + Math.random() * 40;
@@ -611,63 +617,53 @@ function createSpaceEffect(card) {
             star.style.setProperty('--start-y', Math.sin(angle) * 20 + 'px');
             star.style.setProperty('--end-x', Math.cos(angle) * distance + 'px');
             star.style.setProperty('--end-y', Math.sin(angle) * distance - 80 + 'px');
-            card.appendChild(star);
             setTimeout(() => star.remove(), 1000);
         }, i * 70);
     }
 }
 
 // Animasyon - Renkli parçacıklar
-function createColorEffect(card) {
+function createColorEffect(centerX, centerY) {
     const colors = ['🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '⚪'];
     for (let i = 0; i < 10; i++) {
         setTimeout(() => {
-            const color = document.createElement('span');
-            color.className = 'effect-particle color-particle';
-            color.textContent = colors[i % colors.length];
+            const color = createParticle('color-particle', colors[i % colors.length], centerX, centerY);
             const angle = (i / 10) * Math.PI * 2;
             color.style.setProperty('--x', Math.cos(angle) * 80 + 'px');
             color.style.setProperty('--y', Math.sin(angle) * 80 + 'px');
-            card.appendChild(color);
             setTimeout(() => color.remove(), 800);
         }, i * 50);
     }
 }
 
 // Dram - Gözyaşları ve maskeler
-function createDramaEffect(card) {
+function createDramaEffect(centerX, centerY) {
     const drama = ['🎭', '😢', '😭', '💧', '🥀'];
     for (let i = 0; i < 6; i++) {
         setTimeout(() => {
-            const tear = document.createElement('span');
-            tear.className = 'effect-particle drama-particle';
-            tear.textContent = drama[Math.floor(Math.random() * drama.length)];
+            const tear = createParticle('drama-particle', drama[Math.floor(Math.random() * drama.length)], centerX, centerY);
             tear.style.setProperty('--x', (Math.random() - 0.5) * 80 + 'px');
-            card.appendChild(tear);
             setTimeout(() => tear.remove(), 1200);
         }, i * 100);
     }
 }
 
 // Belgesel - Dünya ve doğa
-function createGlobeEffect(card) {
+function createGlobeEffect(centerX, centerY) {
     const nature = ['🌍', '🌎', '🌏', '🌿', '🦁', '🐘', '🦅'];
     for (let i = 0; i < 7; i++) {
         setTimeout(() => {
-            const item = document.createElement('span');
-            item.className = 'effect-particle globe-particle';
-            item.textContent = nature[i % nature.length];
+            const item = createParticle('globe-particle', nature[i % nature.length], centerX, centerY);
             const angle = (i / 7) * Math.PI * 2;
             item.style.setProperty('--orbit-x', Math.cos(angle) * 70 + 'px');
             item.style.setProperty('--orbit-y', Math.sin(angle) * 40 + 'px');
-            card.appendChild(item);
             setTimeout(() => item.remove(), 1200);
         }, i * 80);
     }
 }
 
 // Gerilim - Titreşim ve tehlike
-function createTensionEffect(card) {
+function createTensionEffect(card, centerX, centerY) {
     const tension = ['⚠️', '❗', '😰', '😱', '🔪'];
     
     // Flash efekti
@@ -676,11 +672,8 @@ function createTensionEffect(card) {
     
     for (let i = 0; i < 5; i++) {
         setTimeout(() => {
-            const item = document.createElement('span');
-            item.className = 'effect-particle tension-particle';
-            item.textContent = tension[i % tension.length];
+            const item = createParticle('tension-particle', tension[i % tension.length], centerX, centerY);
             item.style.setProperty('--x', (Math.random() - 0.5) * 100 + 'px');
-            card.appendChild(item);
             setTimeout(() => item.remove(), 700);
         }, i * 100);
     }

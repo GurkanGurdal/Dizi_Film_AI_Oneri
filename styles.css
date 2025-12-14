@@ -933,6 +933,7 @@ body {
     justify-content: center;
     overflow: visible;
     padding: 20px 0;
+    position: relative;
 }
 
 .category-card {
@@ -948,7 +949,7 @@ body {
     transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     font-family: inherit;
     color: var(--text-secondary);
-    overflow: visible;
+    overflow: hidden;
 }
 
 /* Gradient background on hover/select */
@@ -963,8 +964,6 @@ body {
     opacity: 0;
     transition: opacity 0.3s ease;
     z-index: 0;
-    border-radius: 50px;
-    overflow: hidden;
 }
 
 .category-card:hover {
@@ -1020,14 +1019,10 @@ body {
 
 /* Genel parçacık stili */
 .effect-particle {
-    position: absolute;
+    position: fixed;
     font-size: 1.5rem;
     pointer-events: none;
-    z-index: 100;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    -webkit-transform: translate(-50%, -50%);
+    z-index: 10000;
 }
 
 /* Aksiyon - Patlama parçacıkları */
@@ -1046,6 +1041,20 @@ body {
     }
     100% {
         transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1.2) rotate(var(--r));
+        opacity: 0;
+    }
+}
+
+@-webkit-keyframes explodeOut {
+    0% {
+        -webkit-transform: translate(-50%, -50%) scale(0.3);
+        opacity: 1;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        -webkit-transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1.2) rotate(var(--r));
         opacity: 0;
     }
 }

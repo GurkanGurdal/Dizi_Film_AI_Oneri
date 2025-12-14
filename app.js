@@ -47,6 +47,133 @@ const elements = {
 function init() {
     loadHistory();
     setupEventListeners();
+    loadTrendingContent('movie'); // Varsayılan olarak filmler
+    setupTrendingTabs();
+}
+
+// ========================================
+// Trending Banner
+// ========================================
+let currentTrendingType = 'movie';
+
+async function loadTrendingContent(type) {
+    const track = document.getElementById('trendingTrack');
+    if (!track) return;
+
+    currentTrendingType = type;
+
+    // Loading state
+    track.innerHTML = Array(10).fill().map(() => `
+        <div class="trend-card loading">
+            <div class="trend-poster-wrapper">
+                <img class="trend-poster" src="" alt="">
+            </div>
+            <div class="trend-info">
+                <div class="trend-title"></div>
+                <div class="trend-year"></div>
+            </div>
+        </div>
+    `).join('');
+
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/tmdb/trending/${type}/week`);
+        const data = await response.json();
+
+        if (data.results && data.results.length > 0) {
+            track.innerHTML = data.results.slice(0, 10).map((item, index) => {
+                const title = item.title || item.name;
+                const year = (item.release_date || item.first_air_date || '').substring(0, 4);
+                const poster = item.poster_path 
+                    ? `${TMDB_IMAGE_BASE}${item.poster_path}`
+                    : 'https://via.placeholder.com/150x225?text=No+Image';
+                const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
+
+                return `
+                    <div class="trend-card" data-id="${item.id}" data-type="${type}">
+                        <div class="trend-poster-wrapper">
+                            <img class="trend-poster" src="${poster}" alt="${title}">
+                            <span class="trend-rank">${index + 1}</span>
+                            <span class="trend-rating">⭐ ${rating}</span>
+                        </div>
+                        <div class="trend-info">
+                            <div class="trend-title" title="${title}">${title}</div>
+                            <div class="trend-year">${year}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add click handlers
+            track.querySelectorAll('.trend-card').forEach(card => {
+                card.addEventListener('click', () => openTrendingModal(card.dataset.id, card.dataset.type));
+            });
+        }
+    } catch (error) {
+        console.error('Trending load error:', error);
+        track.innerHTML = '<p style="color: var(--text-muted); padding: 2rem;">Trend içerikler yüklenemedi.</p>';
+    }
+}
+
+async function openTrendingModal(id, type) {
+    try {
+        const detailsUrl = `${BACKEND_URL}/api/tmdb/${type}/${id}?language=tr-TR`;
+        const response = await fetch(detailsUrl);
+        const data = await response.json();
+
+        const title = data.title || data.name;
+        const titleTr = title;
+        const year = (data.release_date || data.first_air_date || '').substring(0, 4);
+        const poster = data.poster_path ? `${TMDB_IMAGE_BASE}${data.poster_path}` : null;
+        const backdrop = data.backdrop_path ? `https://image.tmdb.org/t/p/w1280${data.backdrop_path}` : null;
+        const overview = data.overview || 'Açıklama bulunamadı.';
+        const rating = data.vote_average ? data.vote_average.toFixed(1) : null;
+
+        // Get providers
+        const providersUrl = `${BACKEND_URL}/api/tmdb/${type}/${id}/watch/providers`;
+        const providersResponse = await fetch(providersUrl);
+        const providersData = await providersResponse.json();
+        const providers = providersData.results?.TR?.flatrate || [];
+
+        openModal({
+            id,
+            title,
+            titleTr,
+            year,
+            poster,
+            backdrop,
+            overview,
+            rating,
+            tmdbUrl: `https://www.themoviedb.org/${type}/${id}`,
+            providers
+        });
+    } catch (error) {
+        console.error('Error opening trending modal:', error);
+    }
+}
+
+function setupTrendingTabs() {
+    const tabs = document.querySelectorAll('.trend-tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            loadTrendingContent(tab.dataset.type);
+        });
+    });
+
+    // Carousel buttons
+    const track = document.getElementById('trendingTrack');
+    const prevBtn = document.querySelector('.carousel-prev');
+    const nextBtn = document.querySelector('.carousel-next');
+
+    if (prevBtn && nextBtn && track) {
+        prevBtn.addEventListener('click', () => {
+            track.scrollBy({ left: -300, behavior: 'smooth' });
+        });
+        nextBtn.addEventListener('click', () => {
+            track.scrollBy({ left: 300, behavior: 'smooth' });
+        });
+    }
 }
 
 // ========================================

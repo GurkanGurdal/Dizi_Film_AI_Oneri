@@ -17,12 +17,6 @@ Yapay zeka destekli kişiselleştirilmiş film ve dizi öneri platformu. Google 
 - ✨ **Modern UI/UX** - Glassmorphism efektleri ve akıcı animasyonlar
 - 📜 **Öneri Geçmişi** - Geçmiş önerilerinizi görüntüleyin
 
-## 🖼️ Ekran Görüntüleri
-
-<div align="center">
-  <img src="assets/movie_ai.png" alt="AI Maskot" width="100">
-</div>
-
 ## 🛠️ Teknolojiler
 
 ### Frontend

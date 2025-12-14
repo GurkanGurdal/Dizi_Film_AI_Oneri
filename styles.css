@@ -62,10 +62,13 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
 }
 
 html {
     scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -75,11 +78,15 @@ body {
     line-height: 1.6;
     min-height: 100vh;
     overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* Disable tap highlight on mobile */
 button,
 a,
+input,
+select,
+textarea,
 .category-card,
 .mood-btn,
 .toggle-btn,
@@ -88,8 +95,20 @@ a,
 .card,
 [role="button"],
 [onclick] {
-    -webkit-tap-highlight-color: transparent;
-    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none;
+    user-select: none;
+    outline: none;
+}
+
+/* Allow text selection in text inputs */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea {
+    -webkit-user-select: text;
+    user-select: text;
 }
 
 /* ========================================

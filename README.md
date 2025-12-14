@@ -1,6 +1,6 @@
 # 🎬 AI Film & Dizi Öneri
 
-Yapay zeka destekli kişiselleştirilmiş film ve dizi öneri platformu. Google Gemini AI kullanarak ruh halinize, tercihlerinize ve izleme geçmişinize göre size özel öneriler sunar.
+Yapay zeka destekli kişiselleştirilmiş film ve dizi öneri platformu. Ruh halinize, tercihlerinize ve izleme geçmişinize göre size özel öneriler sunar.
 
 ## 🌐 Demo
 
@@ -8,7 +8,7 @@ Yapay zeka destekli kişiselleştirilmiş film ve dizi öneri platformu. Google 
 
 ## ✨ Özellikler
 
-- 🤖 **AI Destekli Öneriler** - Google Gemini AI ile akıllı öneri sistemi
+- 🤖 **AI Destekli Öneriler** - Yapay zeka ile akıllı öneri sistemi
 - 🎭 **Ruh Hali Bazlı Öneriler** - Mutlu, hüzünlü, heyecanlı gibi ruh hallerine göre içerik
 - 📁 **Kategori Seçimi** - Aksiyon, komedi, drama, bilim kurgu ve daha fazlası
 - 🎬 **Film & Dizi Desteği** - Her iki içerik türü için öneriler
@@ -27,14 +27,14 @@ Yapay zeka destekli kişiselleştirilmiş film ve dizi öneri platformu. Google 
 
 ### Backend
 - Node.js & Express.js
-- Google Gemini AI API
+- AI API Entegrasyonu
 - CORS & dotenv
 
 ## 🚀 Kurulum
 
 ### Gereksinimler
 - Node.js 18.0.0 veya üzeri
-- Google Gemini API anahtarı
+- AI API anahtarı
 
 ### Adımlar
 
@@ -54,9 +54,9 @@ npm install
 ```bash
 cp .env.example .env
 ```
-`.env` dosyasını düzenleyip Gemini API anahtarınızı ekleyin:
+`.env` dosyasını düzenleyip API anahtarınızı ekleyin:
 ```
-GEMINI_API_KEY=your_api_key_here
+API_KEY=your_api_key_here
 PORT=5000
 ```
 

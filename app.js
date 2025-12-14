@@ -1,9 +1,21 @@
 // ========================================
 // Configuration
 // ========================================
-// OpenRouter API (Free Gemini access)
-const OPENROUTER_API_KEY = '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';
+// OpenRouter API (Free model access)
+const OPENROUTER_API_KEY = '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';
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
+// Available free models to try
+const FREE_MODELS = [
+    'openai/gpt-4.1-mini',
+    'google/gemma-3-1b-it:free',
+    'google/gemma-3-4b-it:free',
+    'meta-llama/llama-3.2-3b-instruct:free',
+    'mistralai/mistral-7b-instruct:free'
+];
+
+// Current model index
+let currentModelIndex = 0;
 
 // TMDB API
 const TMDB_API_KEY = '7b38ff183fa7e0c194098fec83b5f1ed';
@@ -25,7 +37,9 @@ let state = {
 // DOM Elements
 // ========================================
 const elements = {
-    contentTypeToggle: document.getElementById('contentTypeToggle'),
+    splitToggle: document.getElementById('splitToggle'),
+    splitSides: document.querySelectorAll('.split-side'),
+    contentTypeInput: document.getElementById('contentTypeInput'),
     categoryCards: document.querySelectorAll('.category-card'),
     moodButtons: document.querySelectorAll('.mood-btn'),
     platformCheckboxes: document.querySelectorAll('.platform-checkbox'),
@@ -35,8 +49,7 @@ const elements = {
     resultsContainer: document.getElementById('resultsContainer'),
     historySection: document.getElementById('historySection'),
     historyContainer: document.getElementById('historyContainer'),
-    clearHistoryBtn: document.getElementById('clearHistory'),
-    toggleLabels: document.querySelectorAll('.toggle-label')
+    clearHistoryBtn: document.getElementById('clearHistory')
 };
 
 // ========================================
@@ -45,17 +58,29 @@ const elements = {
 function init() {
     loadHistory();
     setupEventListeners();
-    updateToggleLabels();
 }
 
 // ========================================
 // Event Listeners
 // ========================================
 function setupEventListeners() {
-    // Content Type Toggle
-    elements.contentTypeToggle.addEventListener('change', (e) => {
-        state.contentType = e.target.checked ? 'dizi' : 'film';
-        updateToggleLabels();
+    // Split Toggle (Film/Dizi Selection)
+    elements.splitSides.forEach(side => {
+        side.addEventListener('click', () => {
+            const type = side.dataset.type;
+            
+            // Update state
+            state.contentType = type;
+            
+            // Update hidden input
+            if (elements.contentTypeInput) {
+                elements.contentTypeInput.value = type;
+            }
+            
+            // Update active class
+            elements.splitSides.forEach(s => s.classList.remove('active'));
+            side.classList.add('active');
+        });
     });
 
     // Category Selection
@@ -97,17 +122,6 @@ function setupEventListeners() {
 // ========================================
 // Toggle Functions
 // ========================================
-function updateToggleLabels() {
-    elements.toggleLabels.forEach(label => {
-        const type = label.dataset.type;
-        if (type === state.contentType) {
-            label.classList.add('active');
-        } else {
-            label.classList.remove('active');
-        }
-    });
-}
-
 function toggleCategory(category, card) {
     const index = state.selectedCategories.indexOf(category);
     if (index > -1) {
@@ -120,12 +134,19 @@ function toggleCategory(category, card) {
 }
 
 function selectMood(btn) {
-    // Remove previous selection
-    elements.moodButtons.forEach(b => b.classList.remove('selected'));
-
-    // Select new mood
-    btn.classList.add('selected');
-    state.selectedMood = btn.dataset.mood;
+    const mood = btn.dataset.mood;
+    
+    // If clicking the same mood, deselect it
+    if (state.selectedMood === mood) {
+        btn.classList.remove('selected');
+        state.selectedMood = null;
+    } else {
+        // Remove previous selection
+        elements.moodButtons.forEach(b => b.classList.remove('selected'));
+        // Select new mood
+        btn.classList.add('selected');
+        state.selectedMood = mood;
+    }
 }
 
 function updateSelectedPlatforms() {
@@ -150,44 +171,82 @@ async function getRecommendation() {
     elements.recommendBtn.classList.add('loading');
     elements.resultsContainer.innerHTML = `
         <div class="loading-container">
-            <div class="loading-spinner"></div>
-            <p>Öneriler hazırlanıyor...</p>
+            <div class="mask-loader">
+                <div class="loader-sparkles">
+                    <span class="sparkle s1">✦</span>
+                    <span class="sparkle s2">✦</span>
+                    <span class="sparkle s3">✧</span>
+                    <span class="sparkle s4">✦</span>
+                    <span class="sparkle s5">✧</span>
+                    <span class="sparkle s6">✦</span>
+                </div>
+                <div class="mask-line"></div>
+                <div class="theater-mask">
+                    <img src="assets/sad.png" alt="" class="mask-glow mask-sad-glow">
+                    <img src="assets/happy.png" alt="" class="mask-glow mask-happy-glow">
+                    <img src="assets/sad.png" alt="Sad" class="mask-img mask-sad">
+                    <img src="assets/happy.png" alt="Happy" class="mask-img mask-happy">
+                </div>
+            </div>
+            <div class="loading-text">
+                <span>Öneriler hazırlanıyor</span>
+            </div>
         </div>
     `;
     elements.resultsSection.classList.add('visible');
 
     try {
-        // Step 1: Get recommendations from OpenRouter (Gemini)
-        const response = await fetch(OPENROUTER_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                'HTTP-Referer': window.location.href,
-                'X-Title': 'AI Film Öneri'
-            },
-            body: JSON.stringify({
-                model: 'meta-llama/llama-3.2-3b-instruct:free',
-                messages: [
-                    { role: 'user', content: prompt }
-                ],
-                max_tokens: 4096,
-                temperature: 0.7
-            })
-        });
+        // Try different models if one fails
+        let response = null;
+        let lastError = null;
+        
+        for (let i = 0; i < FREE_MODELS.length; i++) {
+            const modelIndex = (currentModelIndex + i) % FREE_MODELS.length;
+            const model = FREE_MODELS[modelIndex];
+            
+            try {
+                response = await fetch(OPENROUTER_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                        'HTTP-Referer': window.location.href,
+                        'X-Title': 'AI Film Öneri'
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [
+                            { role: 'user', content: prompt }
+                        ],
+                        max_tokens: 4096,
+                        temperature: 0.7
+                    })
+                });
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            if (response.status === 429) {
-                throw new Error('API istek limiti aşıldı. Birkaç dakika bekleyip tekrar deneyin.');
+                if (response.ok) {
+                    currentModelIndex = modelIndex; // Remember working model
+                    break;
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    lastError = errorData.error?.message || `API Hatası: ${response.status}`;
+                    console.log(`Model ${model} failed:`, lastError);
+                    response = null;
+                }
+            } catch (e) {
+                lastError = e.message;
+                console.log(`Model ${model} error:`, e.message);
             }
-            throw new Error(errorData.error?.message || `API Hatası: ${response.status}`);
+        }
+
+        if (!response) {
+            throw new Error(lastError || 'Tüm modeller başarısız oldu. Lütfen daha sonra tekrar deneyin.');
         }
 
         const data = await response.json();
 
         if (data.choices && data.choices[0] && data.choices[0].message) {
             const aiResponse = data.choices[0].message.content;
+            console.log('AI Raw Response:', aiResponse);
 
             // Parse the JSON response
             const recommendations = parseRecommendations(aiResponse);
@@ -200,7 +259,9 @@ async function getRecommendation() {
                 displayPosterCards(enrichedRecommendations);
                 saveToHistory(userPrompt, enrichedRecommendations);
             } else {
-                throw new Error('Öneriler ayrıştırılamadı');
+                // AI düzgün JSON vermedi, yanıtı göster
+                console.error('AI yanıtı JSON formatında değil:', aiResponse);
+                throw new Error('AI uygun öneri üretemedi. Lütfen farklı seçimlerle tekrar deneyin.');
             }
         } else {
             throw new Error('Beklenmeyen API yanıtı');
@@ -242,68 +303,111 @@ function buildPrompt(userPrompt) {
         ? state.selectedPlatforms.map(p => platformMap[p]).join(', ')
         : null;
 
+    // Güncel tarih bilgisi
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.toLocaleString('tr-TR', { month: 'long' });
+
     let prompt = `Sen bir ${contentType} öneri uzmanısın. 
 
-Kullanıcı için ${contentType} önerisi yap.
+GÜNCEL TARİH: ${currentMonth} ${currentYear}
 
 Tercihler:
 - İçerik Türü: ${contentType}
 - Kategoriler: ${categories}`;
 
     if (mood) {
-        prompt += `\n- Ruh Hali: Kullanıcı şu an ${mood} hissediyor`;
+        prompt += `\n- Ruh Hali: ${mood}`;
     }
 
     if (platforms) {
-        prompt += `\n- Platformlar: Şu platformlarda izlenebilen içerikler öner: ${platforms}`;
+        prompt += `\n- Platformlar: ${platforms}`;
     }
 
     if (userPrompt) {
-        prompt += `\n\nKullanıcının ek notu: "${userPrompt}"`;
+        prompt += `\n\n⚠️ EN ÖNEMLİ - KULLANICININ İSTEĞİ (bunu diğer tercihlerden öncelikli tut): "${userPrompt}"
+Eğer kullanıcının isteği yukarıdaki seçimlerle çelişiyorsa, KULLANICININ İSTEĞİNE GÖRE hareket et!`;
     }
 
     prompt += `
 
-ÖNEMLI: Yanıtını SADECE aşağıdaki JSON formatında ver:
+Yanıtını SADECE JSON formatında ver:
+[{"title": "Orijinal ad", "titleTr": "Türkçe ad", "year": "Yıl", "reason": "Kısa sebep"}]
 
-[
-  {
-    "title": "Orijinal adı",
-    "titleTr": "Türkçe adı",
-    "year": "Yıl",
-    "reason": "Kısa sebep (max 50 karakter)"
-  }
-]
-
-5 adet ${contentType} öner. SADECE JSON ver, başka yazı yazma. Reason alanı çok KISA olsun!`;
+5 adet ${contentType} öner. SADECE JSON ver, başka yazı YAZMA!`;
 
     return prompt;
 }
 
 function parseRecommendations(text) {
     try {
-        console.log('Raw Gemini response:', text);
+        console.log('Raw AI response:', text);
 
-        // Clean the text - remove markdown code blocks if present
+        // Clean the text - remove markdown code blocks, invisible characters, etc.
         let cleanText = text
             .replace(/```json\s*/gi, '')
             .replace(/```\s*/g, '')
+            .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width characters
+            .replace(/[\x00-\x1F\x7F]/g, ' ') // Remove control characters
+            .replace(/\r\n/g, '\n')
+            .replace(/\r/g, '\n')
             .trim();
 
         // Try to extract JSON array from the response
         const jsonMatch = cleanText.match(/\[[\s\S]*\]/);
         if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0]);
-            console.log('Parsed recommendations:', parsed);
-            return parsed;
+            let jsonStr = jsonMatch[0];
+            
+            // Try parsing directly first
+            try {
+                const parsed = JSON.parse(jsonStr);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    console.log('Direct parse successful:', parsed);
+                    return parsed;
+                }
+            } catch (e) {
+                console.log('Direct parse failed, trying cleanup:', e.message);
+            }
+            
+            // Clean and try again
+            jsonStr = jsonStr
+                .replace(/,\s*\]/g, ']')
+                .replace(/,\s*\}/g, '}')
+                .replace(/[\n\r\t]/g, ' ')
+                .replace(/\s+/g, ' ');
+            
+            try {
+                const parsed = JSON.parse(jsonStr);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    console.log('Cleaned parse successful:', parsed);
+                    return parsed;
+                }
+            } catch (e) {
+                console.log('Cleaned parse also failed:', e.message);
+            }
         }
 
-        // If no array found, try parsing the whole text
-        if (cleanText.startsWith('[')) {
-            return JSON.parse(cleanText);
+        // Fallback: manually extract film data using regex
+        console.log('Attempting regex extraction...');
+        const films = [];
+        const regex = /"title"\s*:\s*"([^"]+)"[^}]*"titleTr"\s*:\s*"([^"]+)"[^}]*"year"\s*:\s*"?(\d{4})"?[^}]*"reason"\s*:\s*"([^"]+)"/g;
+        let match;
+        
+        while ((match = regex.exec(cleanText)) !== null) {
+            films.push({
+                title: match[1],
+                titleTr: match[2],
+                year: match[3],
+                reason: match[4]
+            });
+        }
+        
+        if (films.length > 0) {
+            console.log('Regex extraction successful:', films);
+            return films;
         }
 
-        console.warn('No JSON array found in response');
+        console.warn('All parse methods failed for:', cleanText);
         return [];
     } catch (error) {
         console.error('JSON parse error:', error);
@@ -444,7 +548,7 @@ function displayPosterCards(recommendations) {
                     ${providerIcons ? `<div class="poster-providers">${providerIcons}</div>` : ''}
                 </div>
                 <div class="poster-overlay">
-                    <span class="watch-btn">🔍 Detay</span>
+                    <span class="detail-hint">Detay için tıkla</span>
                 </div>
             </div>
         `;

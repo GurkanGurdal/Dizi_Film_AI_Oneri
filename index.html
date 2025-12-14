@@ -19,6 +19,40 @@
     <div class="bg-animation">
         <div class="bg-gradient"></div>
         <div class="bg-particles"></div>
+        <div class="floating-icons">
+            <span class="float-icon">🎬</span>
+            <span class="float-icon">⭐</span>
+            <span class="float-icon">🎥</span>
+            <span class="float-icon">🍿</span>
+            <span class="float-icon">🎭</span>
+            <span class="float-icon">📺</span>
+            <span class="float-icon">🎬</span>
+            <span class="float-icon">⭐</span>
+            <span class="float-icon">🎥</span>
+            <span class="float-icon">🍿</span>
+        </div>
+        <div class="star-field">
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+            <div class="star"></div>
+        </div>
     </div>
 
     <!-- Main Container -->
@@ -26,10 +60,30 @@
         <!-- Header -->
         <header class="header">
             <div class="logo">
-                <span class="logo-icon">🎬</span>
-                <h1>AI Film & Dizi Öneri</h1>
+                <div class="logo-icon-wrapper">
+                    <span class="logo-icon">🎬</span>
+                    <span class="logo-glow"></span>
+                </div>
+                <div class="title-wrapper">
+                    <h1 class="main-title">
+                        <span class="title-ai">
+                            <span class="ai-sparkles">
+                                <span class="sparkle-1">✦</span>
+                                <span class="sparkle-2">✦</span>
+                                <span class="sparkle-3">✦</span>
+                            </span>
+                            AI
+                        </span>
+                        <span class="title-text">Film & Dizi</span>
+                        <span class="title-highlight">Öneri</span>
+                    </h1>
+                </div>
             </div>
-            <p class="tagline">Yapay zeka ile kişiselleştirilmiş öneriler</p>
+            <p class="tagline">
+                <span class="tagline-line"></span>
+                <span>Yapay zeka ile kişiselleştirilmiş öneriler</span>
+                <span class="tagline-line"></span>
+            </p>
         </header>
 
         <!-- Main Content -->
@@ -37,13 +91,21 @@
             <!-- Content Type Toggle -->
             <section class="section content-type-section">
                 <h2 class="section-title">📺 Ne İzlemek İstiyorsun?</h2>
-                <div class="toggle-container">
-                    <span class="toggle-label" data-type="film">🎞️ Film</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="contentTypeToggle">
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span class="toggle-label" data-type="dizi">📺 Dizi</span>
+                <div class="split-toggle" id="splitToggle">
+                    <!-- Film Side -->
+                    <div class="split-side split-film active" data-type="film">
+                        <img src="assets/film.png" alt="Film" class="split-image">
+                        <div class="split-overlay"></div>
+                        <span class="split-title">Film</span>
+                    </div>
+                    <!-- Dizi Side -->
+                    <div class="split-side split-dizi" data-type="dizi">
+                        <img src="assets/dizi.png" alt="Dizi" class="split-image">
+                        <div class="split-overlay"></div>
+                        <span class="split-title">Dizi</span>
+                    </div>
+                    <!-- Hidden input for form compatibility -->
+                    <input type="hidden" name="contentType" id="contentTypeInput" value="film">
                 </div>
             </section>
 
@@ -175,9 +237,17 @@
                         placeholder="Örnek: Geçen hafta The Office bitirdim, benzer bir komedi istiyorum. Ya da: Yağmurlu bir gün için rahatlatıcı bir film öner..."
                         rows="4"></textarea>
                     <button id="getRecommendation" class="recommend-btn">
-                        <span class="btn-icon">🎯</span>
-                        <span class="btn-text">Öneri Al</span>
+                        <span class="btn-sparkles">
+                            <span class="sparkle">✦</span>
+                            <span class="sparkle">✦</span>
+                            <span class="sparkle">✦</span>
+                        </span>
+                        <span class="btn-content">
+                            <span class="btn-icon">🤖</span>
+                            <span class="btn-text">AI'dan Öneri İste</span>
+                        </span>
                         <span class="btn-loading"></span>
+                        <span class="btn-glow"></span>
                     </button>
                 </div>
             </section>

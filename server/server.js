@@ -90,6 +90,75 @@ app.post('/api/recommend', async (req, res) => {
     }
 });
 
+// Translation endpoint
+app.post('/api/translate', async (req, res) => {
+    try {
+        const { text, targetLang = 'tr', type = 'general' } = req.body;
+
+        if (!text) {
+            return res.status(400).json({ error: 'Çevrilecek metin gerekli' });
+        }
+
+        if (!OPENROUTER_API_KEY) {
+            return res.status(500).json({ error: 'API key yapılandırılmamış' });
+        }
+
+        let translatePrompt;
+        if (type === 'overview') {
+            translatePrompt = `Translate the following movie/TV show description to Turkish. Keep it natural and fluent. Only return the translation, nothing else.
+
+Description:
+${text}`;
+        } else {
+            translatePrompt = `Translate the following text to Turkish. Only return the translation, nothing else. Do not add any explanations or notes.
+
+Text to translate:
+${text}`;
+        }
+
+        let response = null;
+        let lastError = null;
+
+        for (let i = 0; i < FREE_MODELS.length; i++) {
+            const modelIndex = (currentModelIndex + i) % FREE_MODELS.length;
+            const model = FREE_MODELS[modelIndex];
+
+            try {
+                response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                        'HTTP-Referer': 'https://ai-film-oneri.onrender.com',
+                        'X-Title': 'AI Film Öneri'
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [{ role: 'user', content: translatePrompt }],
+                        max_tokens: 2048,
+                        temperature: 0.3
+                    })
+                });
+
+                if (response.ok) {
+                    currentModelIndex = modelIndex;
+                    const data = await response.json();
+                    const translatedText = data.choices?.[0]?.message?.content || '';
+                    return res.json({ translation: translatedText.trim() });
+                }
+            } catch (e) {
+                lastError = e.message;
+            }
+        }
+
+        res.status(500).json({ error: lastError || 'Çeviri başarısız oldu' });
+
+    } catch (error) {
+        console.error('Translation error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // TMDB Proxy endpoint
 app.get('/api/tmdb/*', async (req, res) => {
     try {

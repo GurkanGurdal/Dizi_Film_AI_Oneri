@@ -112,11 +112,14 @@ async function loadTrendingContent(type) {
                     const backdrop = item.backdrop_path 
                         ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}`
                         : null;
+                    const poster = item.poster_path 
+                        ? `${TMDB_IMAGE_BASE}${item.poster_path}`
+                        : null;
                     const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
                     const overview = item.overview || 'Açıklama bulunamadı.';
 
                     return `
-                        <div class="hero-slide" data-id="${item.id}" data-type="${type}">
+                        <div class="hero-slide" data-id="${item.id}" data-type="${type}" data-poster="${poster || ''}">
                             <div class="hero-backdrop" style="background-image: url('${backdrop}')"></div>
                             <div class="hero-gradient"></div>
                             <div class="hero-content">
@@ -131,7 +134,7 @@ async function loadTrendingContent(type) {
                                     <span>${type === 'movie' ? 'Film' : 'Dizi'}</span>
                                 </div>
                                 <p class="hero-overview">${overview}</p>
-                                <button class="hero-btn" onclick="openTrendingModal('${item.id}', '${type}')">
+                                <button class="hero-btn" onclick="openTrendingModalFromHero(this)">
                                     <span>Detayları Gör</span>
                                     <span>→</span>
                                 </button>
@@ -184,7 +187,11 @@ async function loadTrendingContent(type) {
 
             // Add click handlers
             track.querySelectorAll('.trend-card').forEach(card => {
-                card.addEventListener('click', () => openTrendingModal(card.dataset.id, card.dataset.type));
+                card.addEventListener('click', () => {
+                    const posterImg = card.querySelector('.trend-poster');
+                    const originalPoster = posterImg ? posterImg.src : null;
+                    openTrendingModal(card.dataset.id, card.dataset.type, originalPoster);
+                });
             });
         }
     } catch (error) {
@@ -355,7 +362,7 @@ function setupHeroSlider() {
     goToSlide(0, false);
 }
 
-async function openTrendingModal(id, type) {
+async function openTrendingModal(id, type, originalPosterUrl = null) {
     try {
         // Orijinal poster için dil parametresi olmadan çek
         const originalUrl = `${BACKEND_URL}/api/tmdb/${type}/${id}`;
@@ -370,10 +377,14 @@ async function openTrendingModal(id, type) {
         const title = originalData.title || originalData.name;
         const titleTr = trData.title || trData.name || title;
         const year = (originalData.release_date || originalData.first_air_date || '').substring(0, 4);
-        // Orijinal poster ve backdrop kullan
+        // API'den gelen orijinal poster her zaman TMDB orijinali olacak
         const poster = originalData.poster_path ? `${TMDB_IMAGE_BASE}${originalData.poster_path}` : null;
         const backdrop = originalData.backdrop_path ? `https://image.tmdb.org/t/p/w1280${originalData.backdrop_path}` : null;
-        const overview = trData.overview || originalData.overview || 'Açıklama bulunamadı.';
+        
+        // Türkçe açıklama yoksa İngilizce'yi kullan, çeviriyi async yap
+        let overview = trData.overview || originalData.overview || 'Açıklama bulunamadı.';
+        const needsOverviewTranslation = !trData.overview && originalData.overview;
+        
         const rating = originalData.vote_average ? originalData.vote_average.toFixed(1) : null;
 
         // Get providers
@@ -381,6 +392,54 @@ async function openTrendingModal(id, type) {
         const providersResponse = await fetch(providersUrl);
         const providersData = await providersResponse.json();
         const providers = providersData.results?.TR?.flatrate || [];
+
+        // Get cast - use aggregate_credits for TV shows (more comprehensive)
+        let cast = [];
+        if (type === 'tv') {
+            const creditsUrl = `${BACKEND_URL}/api/tmdb/${type}/${id}/aggregate_credits`;
+            const creditsResponse = await fetch(creditsUrl);
+            const creditsData = await creditsResponse.json();
+            // TV aggregate_credits has roles array instead of character
+            cast = (creditsData.cast || []).slice(0, 15).map(actor => ({
+                ...actor,
+                character: actor.roles?.[0]?.character || ''
+            }));
+        } else {
+            const creditsUrl = `${BACKEND_URL}/api/tmdb/${type}/${id}/credits`;
+            const creditsResponse = await fetch(creditsUrl);
+            const creditsData = await creditsResponse.json();
+            cast = (creditsData.cast || []).slice(0, 15);
+        }
+
+        // Get trailer video (for TV shows, prefer oldest/original trailer)
+        let trailerKey = null;
+        const videosUrl = `${BACKEND_URL}/api/tmdb/${type}/${id}/videos`;
+        const videosResponse = await fetch(videosUrl);
+        const videosData = await videosResponse.json();
+        // Find YouTube trailers
+        let trailers = (videosData.results || []).filter(v => v.site === 'YouTube' && v.type === 'Trailer');
+        
+        if (type === 'tv' && trailers.length > 0) {
+            // For TV shows, sort by published date (oldest first) to get original trailer
+            trailers.sort((a, b) => new Date(a.published_at) - new Date(b.published_at));
+            // Prefer official among oldest trailers, otherwise just oldest
+            const officialTrailer = trailers.find(v => v.official) || trailers[0];
+            trailerKey = officialTrailer?.key || null;
+        } else {
+            // For movies, prefer official, then any trailer
+            const officialTrailer = trailers.find(v => v.official) || trailers[0];
+            trailerKey = officialTrailer?.key || null;
+        }
+        
+        // If no main trailer and it's a TV show, try season 1
+        if (!trailerKey && type === 'tv') {
+            const season1VideosUrl = `${BACKEND_URL}/api/tmdb/tv/${id}/season/1/videos`;
+            const season1VideosResponse = await fetch(season1VideosUrl);
+            const season1VideosData = await season1VideosResponse.json();
+            const season1Trailers = (season1VideosData.results || []).filter(v => v.site === 'YouTube' && v.type === 'Trailer');
+            const season1Trailer = season1Trailers.find(v => v.official) || season1Trailers[0];
+            trailerKey = season1Trailer?.key || null;
+        }
 
         // Store in currentRecommendations temporarily for modal
         const tempMovie = {
@@ -391,19 +450,31 @@ async function openTrendingModal(id, type) {
             poster,
             backdrop,
             overview,
+            originalOverview: originalData.overview, // Çeviri için orijinal
+            needsOverviewTranslation, // Türkçe yoksa çevir
             rating,
             reason: null, // Trending'de reason yok
             tmdbUrl: `https://www.themoviedb.org/${type}/${id}`,
             providers,
-            mediaType: type // Film mi Dizi mi
+            cast, // Oyuncu listesi
+            mediaType: type, // Film mi Dizi mi
+            trailerKey // YouTube fragman key
         };
 
-        // Add to currentRecommendations and open modal
-        currentRecommendations = [tempMovie];
-        openMovieModal(0);
+        // Open modal with movie object directly (don't modify currentRecommendations)
+        openMovieModal(tempMovie);
     } catch (error) {
         console.error('Error opening trending modal:', error);
     }
+}
+
+// Helper function for hero slider button
+function openTrendingModalFromHero(btn) {
+    const slide = btn.closest('.hero-slide');
+    const id = slide.dataset.id;
+    const type = slide.dataset.type;
+    const poster = slide.dataset.poster && slide.dataset.poster !== '' ? slide.dataset.poster : null;
+    openTrendingModal(id, type, poster);
 }
 
 function setupTrendingTabs() {
@@ -1005,6 +1076,53 @@ async function fetchTMDBData(recommendations) {
                 const trProviders = providersData.results?.TR;
                 const allProviders = trProviders?.flatrate || trProviders?.buy || trProviders?.rent || [];
 
+                // Get cast - use aggregate_credits for TV shows
+                let cast = [];
+                if (searchType === 'tv') {
+                    const creditsUrl = `${BACKEND_URL}/api/tmdb/${searchType}/${result.id}/aggregate_credits`;
+                    const creditsResponse = await fetch(creditsUrl);
+                    const creditsData = await creditsResponse.json();
+                    cast = (creditsData.cast || []).slice(0, 15).map(actor => ({
+                        ...actor,
+                        character: actor.roles?.[0]?.character || ''
+                    }));
+                } else {
+                    const creditsUrl = `${BACKEND_URL}/api/tmdb/${searchType}/${result.id}/credits`;
+                    const creditsResponse = await fetch(creditsUrl);
+                    const creditsData = await creditsResponse.json();
+                    cast = (creditsData.cast || []).slice(0, 15);
+                }
+
+                // Get trailer video (for TV shows, prefer oldest/original trailer)
+                let trailerKey = null;
+                const videosUrl = `${BACKEND_URL}/api/tmdb/${searchType}/${result.id}/videos`;
+                const videosResponse = await fetch(videosUrl);
+                const videosData = await videosResponse.json();
+                // Find YouTube trailers
+                let trailers = (videosData.results || []).filter(v => v.site === 'YouTube' && v.type === 'Trailer');
+                
+                if (searchType === 'tv' && trailers.length > 0) {
+                    // For TV shows, sort by published date (oldest first) to get original trailer
+                    trailers.sort((a, b) => new Date(a.published_at) - new Date(b.published_at));
+                    // Prefer official among oldest trailers, otherwise just oldest
+                    const officialTrailer = trailers.find(v => v.official) || trailers[0];
+                    trailerKey = officialTrailer?.key || null;
+                } else {
+                    // For movies, prefer official, then any trailer
+                    const officialTrailer = trailers.find(v => v.official) || trailers[0];
+                    trailerKey = officialTrailer?.key || null;
+                }
+                
+                // If no main trailer and it's a TV show, try season 1
+                if (!trailerKey && searchType === 'tv') {
+                    const season1VideosUrl = `${BACKEND_URL}/api/tmdb/tv/${result.id}/season/1/videos`;
+                    const season1VideosResponse = await fetch(season1VideosUrl);
+                    const season1VideosData = await season1VideosResponse.json();
+                    const season1Trailers = (season1VideosData.results || []).filter(v => v.site === 'YouTube' && v.type === 'Trailer');
+                    const season1Trailer = season1Trailers.find(v => v.official) || season1Trailers[0];
+                    trailerKey = season1Trailer?.key || null;
+                }
+
                 enrichedData.push({
                     id: result.id,
                     title: rec.title,
@@ -1013,11 +1131,15 @@ async function fetchTMDBData(recommendations) {
                     poster: originalPoster ? `${TMDB_IMAGE_BASE}${originalPoster}` : null,
                     backdrop: originalBackdrop ? `https://image.tmdb.org/t/p/w1280${originalBackdrop}` : null,
                     overview: detailsTrData.overview || result.overview || 'Açıklama bulunamadı.',
+                    originalOverview: result.overview, // Çeviri için orijinal
+                    needsOverviewTranslation: !detailsTrData.overview && result.overview, // Türkçe yoksa çevir
                     rating: result.vote_average ? result.vote_average.toFixed(1) : null,
                     reason: rec.reason,
                     tmdbUrl: `https://www.themoviedb.org/${searchType}/${result.id}`,
                     providers: allProviders,
-                    mediaType: searchType
+                    cast, // Oyuncu listesi
+                    mediaType: searchType,
+                    trailerKey // YouTube fragman key
                 });
             } else {
                 enrichedData.push({
@@ -1192,8 +1314,9 @@ function clearHistory() {
 // ========================================
 // Modal Functions
 // ========================================
-function openMovieModal(index) {
-    const movie = currentRecommendations[index];
+function openMovieModal(indexOrMovie) {
+    // Accept either an index (for recommendations) or a movie object directly
+    const movie = typeof indexOrMovie === 'object' ? indexOrMovie : currentRecommendations[indexOrMovie];
     if (!movie) return;
 
     const modal = document.getElementById('movieModal');
@@ -1238,6 +1361,30 @@ function openMovieModal(index) {
     modalRating.textContent = movie.rating ? `⭐ ${movie.rating}` : '';
     modalDescription.textContent = movie.overview || 'Açıklama bulunamadı.';
 
+    // Açıklama çevirisi gerekiyorsa async olarak yap
+    if (movie.needsOverviewTranslation && movie.originalOverview) {
+        modalDescription.classList.add('bio-translating');
+        
+        fetch(`${BACKEND_URL}/api/translate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: movie.originalOverview, type: 'overview' })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.translation) {
+                modalDescription.textContent = data.translation;
+                // Çevrilen veriyi kaydet, tekrar çevirmesin
+                movie.overview = data.translation;
+                movie.needsOverviewTranslation = false;
+            }
+        })
+        .catch(err => console.error('Overview translation error:', err))
+        .finally(() => {
+            modalDescription.classList.remove('bio-translating');
+        });
+    }
+
     // Set reason
     if (movie.reason) {
         modalReason.textContent = movie.reason;
@@ -1246,22 +1393,310 @@ function openMovieModal(index) {
         modalReasonBox.style.display = 'none';
     }
 
+    // Set cast
+    const modalCastSection = document.getElementById('modalCastSection');
+    const modalCastList = document.getElementById('modalCastList');
+    
+    if (movie.cast && movie.cast.length > 0) {
+        modalCastList.innerHTML = movie.cast.map(actor => `
+            <div class="cast-item" onclick="openActorModal(${actor.id})" style="cursor: pointer;">
+                <div class="cast-photo" style="background-image: url('${actor.profile_path ? `https://image.tmdb.org/t/p/w185${actor.profile_path}` : ''}')">
+                    ${!actor.profile_path ? '<span class="no-photo">👤</span>' : ''}
+                </div>
+                <div class="cast-info">
+                    <span class="cast-name">${actor.name}</span>
+                    <span class="cast-character">${actor.character || ''}</span>
+                </div>
+            </div>
+        `).join('');
+        modalCastSection.style.display = 'block';
+    } else {
+        modalCastSection.style.display = 'none';
+    }
+
     // Set Watch button (Google search)
     const searchTitle = movie.titleTr || movie.title;
-    modalWatchBtn.href = `https://www.google.com/search?q=${encodeURIComponent(searchTitle + ' izle')}`;
+    modalWatchBtn.href = `https://www.google.com/search?q=${encodeURIComponent(searchTitle)}`;
 
     // Set TMDB link
     modalTmdbLink.href = movie.tmdbUrl;
 
+    // Set Trailer button
+    const modalTrailerBtn = document.getElementById('modalTrailerBtn');
+    if (movie.trailerKey) {
+        modalTrailerBtn.style.display = 'inline-flex';
+        modalTrailerBtn.onclick = () => openTrailerModal(movie.trailerKey);
+    } else {
+        modalTrailerBtn.style.display = 'none';
+    }
+
     // Show modal
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
+    
+    // Update cast arrow states after a short delay (for DOM to render)
+    setTimeout(updateCastArrows, 100);
 }
 
 function closeMovieModal() {
     const modal = document.getElementById('movieModal');
     modal.classList.remove('active');
     document.body.style.overflow = '';
+    
+    // Reset cast list scroll position
+    const castList = document.getElementById('modalCastList');
+    if (castList) {
+        castList.scrollLeft = 0;
+    }
+}
+
+// Trailer Modal Functions
+let ytPlayer = null;
+let playerUpdateInterval = null;
+
+function onYouTubeIframeAPIReady() {
+    // YouTube API hazır - player ilk video açıldığında oluşturulacak
+}
+
+function openTrailerModal(youtubeKey) {
+    const trailerModal = document.getElementById('trailerModal');
+    trailerModal.classList.add('active');
+    
+    // Player varsa yok et ve yeniden oluştur
+    if (ytPlayer) {
+        ytPlayer.destroy();
+        ytPlayer = null;
+    }
+    
+    ytPlayer = new YT.Player('youtubePlayer', {
+        videoId: youtubeKey,
+        playerVars: {
+            autoplay: 1,
+            controls: 0, // Kendi kontrollerimizi kullan
+            modestbranding: 1,
+            rel: 0,
+            showinfo: 0,
+            fs: 0, // Kendi fullscreen butonumuzu kullanacağız
+            cc_load_policy: 0,
+            iv_load_policy: 3, // Annotations gizle
+            playsinline: 1,
+            disablekb: 1 // Klavye kontrollerini devre dışı bırak
+        },
+        events: {
+            onReady: onPlayerReady,
+            onStateChange: onPlayerStateChange
+        }
+    });
+}
+
+function onPlayerReady(event) {
+    event.target.playVideo();
+    setupCustomControls();
+    startProgressUpdate();
+}
+
+function onPlayerStateChange(event) {
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    if (event.data === YT.PlayerState.PLAYING) {
+        playPauseBtn.classList.add('playing');
+    } else {
+        playPauseBtn.classList.remove('playing');
+    }
+}
+
+
+
+function setupCustomControls() {
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const progressContainer = document.getElementById('progressContainer');
+    const volumeBtn = document.getElementById('volumeBtn');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    
+    // Play/Pause
+    playPauseBtn.onclick = () => {
+        if (ytPlayer) {
+            const state = ytPlayer.getPlayerState();
+            if (state === YT.PlayerState.PLAYING) {
+                ytPlayer.pauseVideo();
+            } else {
+                ytPlayer.playVideo();
+            }
+        }
+    };
+    
+    // Progress bar - drag support
+    let isDragging = false;
+    let wasPlayingBeforeDrag = false;
+    
+    const seekToPosition = (e) => {
+        if (ytPlayer && ytPlayer.getDuration) {
+            const rect = progressContainer.getBoundingClientRect();
+            let percent = (e.clientX - rect.left) / rect.width;
+            percent = Math.max(0, Math.min(1, percent)); // Clamp 0-1
+            const duration = ytPlayer.getDuration();
+            
+            // Visual feedback immediately
+            document.getElementById('progressPlayed').style.width = (percent * 100) + '%';
+            document.getElementById('progressHandle').style.left = (percent * 100) + '%';
+            document.getElementById('timeDisplay').textContent = 
+                formatTime(duration * percent) + ' / ' + formatTime(duration);
+            
+            return { percent, duration };
+        }
+        return null;
+    };
+    
+    progressContainer.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        isDragging = true;
+        progressContainer.classList.add('dragging');
+        // Video oynatılıyorsa hatırla
+        wasPlayingBeforeDrag = ytPlayer && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+        seekToPosition(e);
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+            e.preventDefault();
+            seekToPosition(e);
+        }
+    });
+    
+    document.addEventListener('mouseup', (e) => {
+        if (isDragging) {
+            isDragging = false;
+            progressContainer.classList.remove('dragging');
+            const result = seekToPosition(e);
+            if (result && ytPlayer) {
+                ytPlayer.seekTo(result.duration * result.percent, true);
+                // Eğer sürüklemeden önce oynatılıyorsa devam et
+                if (wasPlayingBeforeDrag) {
+                    ytPlayer.playVideo();
+                }
+            }
+        }
+    });
+    
+    // Click to seek (for non-drag clicks)
+    progressContainer.addEventListener('click', (e) => {
+        if (!isDragging && ytPlayer) {
+            const rect = progressContainer.getBoundingClientRect();
+            const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            const duration = ytPlayer.getDuration();
+            ytPlayer.seekTo(duration * percent, true);
+        }
+    });
+    
+    // Volume
+    volumeBtn.onclick = () => {
+        if (ytPlayer) {
+            if (ytPlayer.isMuted()) {
+                ytPlayer.unMute();
+                volumeBtn.classList.remove('muted');
+                volumeSlider.value = ytPlayer.getVolume();
+                updateVolumeSliderBackground(volumeSlider);
+            } else {
+                ytPlayer.mute();
+                volumeBtn.classList.add('muted');
+            }
+        }
+    };
+    
+    volumeSlider.oninput = () => {
+        if (ytPlayer) {
+            ytPlayer.setVolume(volumeSlider.value);
+            updateVolumeSliderBackground(volumeSlider);
+            if (volumeSlider.value == 0) {
+                volumeBtn.classList.add('muted');
+            } else {
+                volumeBtn.classList.remove('muted');
+                ytPlayer.unMute();
+            }
+        }
+    };
+    
+    // Fullscreen
+    fullscreenBtn.onclick = () => {
+        const wrapper = document.querySelector('.trailer-video-wrapper');
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        } else {
+            wrapper.requestFullscreen();
+        }
+    };
+    
+    // Click on video to play/pause
+    const playerElement = document.getElementById('youtubePlayer');
+    playerElement.addEventListener('click', () => {
+        if (ytPlayer) {
+            const state = ytPlayer.getPlayerState();
+            if (state === YT.PlayerState.PLAYING) {
+                ytPlayer.pauseVideo();
+            } else {
+                ytPlayer.playVideo();
+            }
+        }
+    });
+    
+    // Initialize volume slider background
+    updateVolumeSliderBackground(volumeSlider);
+}
+
+function updateVolumeSliderBackground(slider) {
+    const value = slider.value;
+    const percent = value + '%';
+    slider.style.background = `linear-gradient(to right, #6366f1 0%, #8b5cf6 ${percent}, rgba(255,255,255,0.3) ${percent})`;
+}
+
+function startProgressUpdate() {
+    if (playerUpdateInterval) {
+        clearInterval(playerUpdateInterval);
+    }
+    
+    playerUpdateInterval = setInterval(() => {
+        if (ytPlayer && ytPlayer.getCurrentTime) {
+            const currentTime = ytPlayer.getCurrentTime();
+            const duration = ytPlayer.getDuration();
+            const buffered = ytPlayer.getVideoLoadedFraction();
+            
+            if (duration > 0) {
+                const percent = (currentTime / duration) * 100;
+                document.getElementById('progressPlayed').style.width = percent + '%';
+                document.getElementById('progressHandle').style.left = percent + '%';
+                document.getElementById('progressBuffered').style.width = (buffered * 100) + '%';
+                document.getElementById('timeDisplay').textContent = 
+                    formatTime(currentTime) + ' / ' + formatTime(duration);
+            }
+        }
+    }, 100);
+}
+
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return mins + ':' + (secs < 10 ? '0' : '') + secs;
+}
+
+function closeTrailerModal() {
+    const trailerModal = document.getElementById('trailerModal');
+    trailerModal.classList.remove('active');
+    
+    if (playerUpdateInterval) {
+        clearInterval(playerUpdateInterval);
+        playerUpdateInterval = null;
+    }
+    
+    if (ytPlayer) {
+        ytPlayer.stopVideo();
+    }
+    
+    // Reset controls
+    document.getElementById('progressPlayed').style.width = '0%';
+    document.getElementById('progressHandle').style.left = '0%';
+    document.getElementById('progressBuffered').style.width = '0%';
+    document.getElementById('timeDisplay').textContent = '0:00 / 0:00';
+    document.getElementById('playPauseBtn').classList.remove('playing');
 }
 
 // Setup modal event listeners
@@ -1279,12 +1714,330 @@ function setupModalListeners() {
         }
     });
 
-    // Escape key to close
+    // Escape key to close (handles both modals)
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modal.classList.contains('active')) {
-            closeMovieModal();
+        if (e.key === 'Escape') {
+            const trailerModal = document.getElementById('trailerModal');
+            if (trailerModal.classList.contains('active')) {
+                closeTrailerModal();
+            } else if (modal.classList.contains('active')) {
+                closeMovieModal();
+            }
         }
     });
+
+    // Trailer modal listeners
+    const trailerModal = document.getElementById('trailerModal');
+    const trailerCloseBtn = document.getElementById('trailerModalClose');
+    
+    trailerCloseBtn.addEventListener('click', closeTrailerModal);
+    
+    trailerModal.addEventListener('click', (e) => {
+        if (e.target === trailerModal) {
+            closeTrailerModal();
+        }
+    });
+
+    // Cast arrow buttons
+    const castArrowLeft = document.getElementById('castArrowLeft');
+    const castArrowRight = document.getElementById('castArrowRight');
+    const castList = document.getElementById('modalCastList');
+
+    castArrowLeft.addEventListener('click', () => {
+        const scrollAmount = castList.clientWidth; // Görünür alan kadar kaydır
+        castList.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    });
+
+    castArrowRight.addEventListener('click', () => {
+        const scrollAmount = castList.clientWidth; // Görünür alan kadar kaydır
+        castList.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    });
+
+    // Update arrow states on scroll
+    castList.addEventListener('scroll', updateCastArrows);
+
+    // Actor modal close button
+    const actorModal = document.getElementById('actorModal');
+    const actorCloseBtn = document.getElementById('actorModalClose');
+    
+    actorCloseBtn.addEventListener('click', closeActorModal);
+    
+    actorModal.addEventListener('click', (e) => {
+        if (e.target === actorModal) {
+            closeActorModal();
+        }
+    });
+
+    // Known for arrow buttons
+    const knownForArrowLeft = document.getElementById('knownForArrowLeft');
+    const knownForArrowRight = document.getElementById('knownForArrowRight');
+    const knownForList = document.getElementById('actorKnownFor');
+
+    knownForArrowLeft.addEventListener('click', () => {
+        const scrollAmount = knownForList.clientWidth;
+        knownForList.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    });
+
+    knownForArrowRight.addEventListener('click', () => {
+        const scrollAmount = knownForList.clientWidth;
+        knownForList.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    });
+
+    knownForList.addEventListener('scroll', updateKnownForArrows);
+}
+
+function updateCastArrows() {
+    const castList = document.getElementById('modalCastList');
+    const castArrowLeft = document.getElementById('castArrowLeft');
+    const castArrowRight = document.getElementById('castArrowRight');
+    
+    if (!castList || !castArrowLeft || !castArrowRight) return;
+    
+    const isAtStart = castList.scrollLeft <= 0;
+    const isAtEnd = castList.scrollLeft >= castList.scrollWidth - castList.clientWidth - 5;
+    
+    castArrowLeft.disabled = isAtStart;
+    castArrowRight.disabled = isAtEnd;
+}
+
+function updateKnownForArrows() {
+    const knownForList = document.getElementById('actorKnownFor');
+    const knownForArrowLeft = document.getElementById('knownForArrowLeft');
+    const knownForArrowRight = document.getElementById('knownForArrowRight');
+    
+    if (!knownForList || !knownForArrowLeft || !knownForArrowRight) return;
+    
+    const isAtStart = knownForList.scrollLeft <= 0;
+    const isAtEnd = knownForList.scrollLeft >= knownForList.scrollWidth - knownForList.clientWidth - 5;
+    
+    knownForArrowLeft.disabled = isAtStart;
+    knownForArrowRight.disabled = isAtEnd;
+}
+
+// ========================================
+// Actor Modal Functions
+// ========================================
+async function openActorModal(actorId) {
+    try {
+        const actorModal = document.getElementById('actorModal');
+        
+        // Fetch actor details - Turkish first, then English for biography fallback
+        const detailsUrlTr = `${BACKEND_URL}/api/tmdb/person/${actorId}?language=tr-TR`;
+        const detailsUrlEn = `${BACKEND_URL}/api/tmdb/person/${actorId}?language=en-US`;
+        const [detailsResponseTr, detailsResponseEn] = await Promise.all([
+            fetch(detailsUrlTr),
+            fetch(detailsUrlEn)
+        ]);
+        const actorDataTr = await detailsResponseTr.json();
+        const actorDataEn = await detailsResponseEn.json();
+        
+        // Use Turkish data but keep English biography as fallback
+        const actorData = actorDataTr;
+        const englishBiography = actorDataEn.biography || '';
+
+        // Fetch "known_for" from search/person endpoint (this is what TMDB shows)
+        const actorName = actorDataEn.name || actorDataTr.name;
+        const searchUrl = `${BACKEND_URL}/api/tmdb/search/person?query=${encodeURIComponent(actorName)}&language=tr-TR`;
+        const searchResponse = await fetch(searchUrl);
+        const searchData = await searchResponse.json();
+        // Find the matching actor by ID
+        const searchedActor = searchData.results?.find(p => p.id === parseInt(actorId));
+        const knownForFromSearch = searchedActor?.known_for || [];
+
+        // Fetch actor credits - one for original posters, one for Turkish titles
+        const creditsUrlOriginal = `${BACKEND_URL}/api/tmdb/person/${actorId}/combined_credits`;
+        const creditsUrlTr = `${BACKEND_URL}/api/tmdb/person/${actorId}/combined_credits?language=tr-TR`;
+        const [creditsResponseOriginal, creditsResponseTr] = await Promise.all([
+            fetch(creditsUrlOriginal),
+            fetch(creditsUrlTr)
+        ]);
+        const creditsDataOriginal = await creditsResponseOriginal.json();
+        const creditsDataTr = await creditsResponseTr.json();
+        
+        // Create a map for Turkish titles
+        const trTitleMap = new Map();
+        creditsDataTr.cast?.forEach(c => {
+            trTitleMap.set(c.id, c.title || c.name);
+        });
+        
+        // Use original credits data but merge Turkish titles
+        const creditsData = {
+            cast: creditsDataOriginal.cast?.map(c => ({
+                ...c,
+                titleTr: trTitleMap.get(c.id) || c.title || c.name
+            }))
+        };
+
+        // Set actor photo
+        const actorPhoto = document.getElementById('actorPhoto');
+        if (actorData.profile_path) {
+            actorPhoto.style.backgroundImage = `url('https://image.tmdb.org/t/p/w500${actorData.profile_path}')`;
+            actorPhoto.innerHTML = '';
+        } else {
+            actorPhoto.style.backgroundImage = 'none';
+            actorPhoto.innerHTML = '<span class="no-photo">👤</span>';
+        }
+
+        // Set backdrop on modal-body (covers entire scrollable content)
+        const actorModalBody = document.querySelector('.actor-modal-body');
+        if (actorData.profile_path) {
+            actorModalBody.style.setProperty('--actor-bg-image', `url('https://image.tmdb.org/t/p/w780${actorData.profile_path}')`);
+        } else {
+            actorModalBody.style.setProperty('--actor-bg-image', 'none');
+        }
+
+        // Set actor name
+        document.getElementById('actorName').textContent = actorData.name || 'Bilinmeyen';
+
+        // Set birthday
+        const actorBirthday = document.getElementById('actorBirthday');
+        if (actorData.birthday) {
+            const age = calculateAge(actorData.birthday, actorData.deathday);
+            const deathInfo = actorData.deathday ? ` - ✝️ ${formatDate(actorData.deathday)}` : '';
+            actorBirthday.innerHTML = `🎂 ${formatDate(actorData.birthday)} (${age} yaş)${deathInfo}`;
+        } else {
+            actorBirthday.textContent = '';
+        }
+
+        // Set birthplace
+        const actorBirthplace = document.getElementById('actorBirthplace');
+        if (actorData.place_of_birth) {
+            actorBirthplace.innerHTML = `📍 ${actorData.place_of_birth}`;
+        } else {
+            actorBirthplace.textContent = '';
+        }
+
+        // Set biography - translate from English if Turkish not available
+        const actorBiography = document.getElementById('actorBiography');
+        if (actorData.biography) {
+            actorBiography.textContent = actorData.biography;
+        } else if (englishBiography) {
+            // Show English text with shimmer effect while translating
+            actorBiography.textContent = englishBiography;
+            actorBiography.classList.add('bio-translating');
+            // Translate from English (don't await - let it run in background)
+            fetch(`${BACKEND_URL}/api/translate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: englishBiography, targetLang: 'tr' })
+            })
+            .then(response => response.json())
+            .then(translateData => {
+                if (translateData.translation) {
+                    actorBiography.textContent = translateData.translation;
+                } else {
+                    actorBiography.textContent = englishBiography; // Fallback to English
+                }
+            })
+            .catch(e => {
+                console.error('Translation error:', e);
+                actorBiography.textContent = englishBiography; // Fallback to English
+            })
+            .finally(() => {
+                actorBiography.classList.remove('bio-translating');
+            });
+        } else {
+            actorBiography.textContent = 'Biyografi bilgisi bulunamadı.';
+        }
+
+        // Set known for - use TMDB's known_for data from search endpoint + top credits
+        const knownForList = document.getElementById('actorKnownFor');
+        
+        // Create a map for original posters from credits
+        const originalPosterMap = new Map();
+        creditsDataOriginal.cast?.forEach(c => {
+            originalPosterMap.set(c.id, c.poster_path);
+        });
+        
+        // Start with TMDB's official known_for list
+        let topCredits = [];
+        const knownForIds = new Set();
+        
+        if (knownForFromSearch.length > 0) {
+            // Use TMDB's official known_for list first
+            knownForFromSearch
+                .filter(item => item.poster_path || originalPosterMap.get(item.id))
+                .forEach(item => {
+                    knownForIds.add(item.id);
+                    topCredits.push({
+                        id: item.id,
+                        media_type: item.media_type,
+                        poster_path: originalPosterMap.get(item.id) || item.poster_path,
+                        titleTr: item.title || item.name
+                    });
+                });
+        }
+        
+        // Add more from combined_credits (exclude already added ones)
+        const additionalCredits = creditsData.cast
+            ?.filter(c => c.poster_path && c.character && c.character.trim() !== '')
+            ?.filter(c => !knownForIds.has(c.id))
+            ?.filter(c => c.order !== undefined ? c.order < 10 : true)
+            ?.sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0))
+            ?.slice(0, 15 - topCredits.length)
+            ?.map(c => ({
+                id: c.id,
+                media_type: c.media_type,
+                poster_path: c.poster_path,
+                titleTr: c.titleTr
+            })) || [];
+        
+        topCredits = [...topCredits, ...additionalCredits];
+
+        knownForList.innerHTML = topCredits.map(credit => `
+            <div class="known-for-item" onclick="openKnownForModal(${credit.id}, '${credit.media_type}')">
+                <div class="known-for-poster" style="background-image: url('https://image.tmdb.org/t/p/w185${credit.poster_path}')"></div>
+                <div class="known-for-title-text">${credit.titleTr}</div>
+            </div>
+        `).join('');
+
+        // Set TMDB link
+        document.getElementById('actorTmdbLink').href = `https://www.themoviedb.org/person/${actorId}`;
+
+        // Show modal
+        actorModal.classList.add('active');
+        
+        // Update arrows after render
+        setTimeout(updateKnownForArrows, 100);
+
+    } catch (error) {
+        console.error('Error opening actor modal:', error);
+    }
+}
+
+function closeActorModal() {
+    const actorModal = document.getElementById('actorModal');
+    actorModal.classList.remove('active');
+    
+    // Reset known-for list scroll position
+    const knownForList = document.getElementById('actorKnownFor');
+    if (knownForList) {
+        knownForList.scrollLeft = 0;
+    }
+}
+
+// Helper function to open movie/tv from known for
+async function openKnownForModal(id, mediaType) {
+    closeActorModal();
+    await openTrendingModal(id, mediaType);
+}
+
+// Helper function to calculate age
+function calculateAge(birthday, deathday = null) {
+    const birth = new Date(birthday);
+    const end = deathday ? new Date(deathday) : new Date();
+    let age = end.getFullYear() - birth.getFullYear();
+    const monthDiff = end.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && end.getDate() < birth.getDate())) {
+        age--;
+    }
+    return age;
+}
+
+// Helper function to format date
+function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 // ========================================

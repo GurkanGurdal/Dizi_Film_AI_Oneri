@@ -3980,45 +3980,51 @@ textarea {
     
     /* Cast section mobile */
     .cast-item {
-        width: 80px;
+        width: 80px !important;
+        flex: 0 0 80px !important;
+        min-width: 80px !important;
+        max-width: 80px !important;
     }
     
     .cast-photo {
-        height: 96px;
+        height: 96px !important;
     }
     
     .cast-info {
-        padding: var(--spacing-xs);
+        padding: var(--spacing-xs) !important;
     }
     
     .cast-name {
-        font-size: 0.7rem;
+        font-size: 0.7rem !important;
     }
     
     .cast-character {
-        font-size: 0.6rem;
+        font-size: 0.6rem !important;
     }
     
     .cast-photo .no-photo {
-        font-size: 2rem;
+        font-size: 2rem !important;
     }
 }
 
 @media (max-width: 480px) {
     .cast-item {
-        width: 70px;
+        width: 70px !important;
+        flex: 0 0 70px !important;
+        min-width: 70px !important;
+        max-width: 70px !important;
     }
     
     .cast-photo {
-        height: 84px;
+        height: 84px !important;
     }
     
     .cast-name {
-        font-size: 0.65rem;
+        font-size: 0.65rem !important;
     }
     
     .cast-character {
-        font-size: 0.55rem;
+        font-size: 0.55rem !important;
     }
     
     .cast-arrow {

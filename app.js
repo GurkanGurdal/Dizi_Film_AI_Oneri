@@ -11,6 +11,20 @@ const BACKEND_URL = window.location.hostname === 'localhost' || window.location.
 // TMDB Image Base URL (poster gösterimi için)
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 
+// Cold Start Fun Facts
+const COLD_START_FACTS = [
+    "💡 Biliyor muydunuz? Film makaraları saniyede 24 kare gösterir!",
+    "🎬 İlk sesli film 'The Jazz Singer' 1927'de gösterime girdi.",
+    "🍿 Patlamış mısır, 1930'lardan beri sinemaların vazgeçilmezi!",
+    "🎭 Hollywood'un ilk filmi 1910'da çekildi.",
+    "📺 Netflix, 1997'de DVD kiralama servisi olarak başladı.",
+    "🌟 En uzun film 857 saat sürüyor: 'Logistics' (2012).",
+    "🎥 Avatar, 10 yıldan fazla süren bir yapım sürecine sahip.",
+    "🏆 En çok Oscar kazanan film: Ben-Hur, Titanic ve LOTR (11'er ödül).",
+    "🎞️ Bir dakikalık film yaklaşık 1.4GB veri içerir (4K).",
+    "✨ Pixar'ın ilk uzun metrajlı filmi Toy Story (1995)."
+];
+
 // ========================================
 // State
 // ========================================
@@ -18,8 +32,150 @@ let state = {
     contentType: 'film', // 'film' or 'dizi'
     selectedCategories: [],
     selectedMood: null,
-    history: []
+    history: [],
+    serverReady: false
 };
+
+// ========================================
+// Cold Start Handler
+// ========================================
+let coldStartInterval = null;
+let coldStartTime = 0;
+let factIndex = 0;
+
+function showColdStart() {
+    const overlay = document.getElementById('coldStartOverlay');
+    if (overlay) {
+        overlay.classList.remove('hidden');
+        startColdStartTimer();
+        rotateFacts();
+    }
+}
+
+function hideColdStart() {
+    const overlay = document.getElementById('coldStartOverlay');
+    if (overlay) {
+        const timeText = document.getElementById('coldStartTime');
+        if (timeText) timeText.textContent = '✅ Hazır!';
+        
+        // Biraz bekle ve kapat
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+            stopColdStartTimer();
+        }, 500);
+    }
+}
+
+function startColdStartTimer() {
+    coldStartTime = 0;
+    const timeText = document.getElementById('coldStartTime');
+    
+    coldStartInterval = setInterval(() => {
+        coldStartTime++;
+        
+        // Time text
+        if (timeText) {
+            if (coldStartTime < 60) {
+                timeText.textContent = `⏱️ ${coldStartTime} saniye`;
+            } else {
+                const mins = Math.floor(coldStartTime / 60);
+                const secs = coldStartTime % 60;
+                timeText.textContent = `⏱️ ${mins} dk ${secs} sn`;
+            }
+        }
+    }, 1000);
+}
+
+function stopColdStartTimer() {
+    if (coldStartInterval) {
+        clearInterval(coldStartInterval);
+        coldStartInterval = null;
+    }
+}
+
+function rotateFacts() {
+    const factText = document.getElementById('coldStartFact');
+    if (!factText) return;
+    
+    // İlk fact'i göster
+    factText.textContent = COLD_START_FACTS[factIndex];
+    
+    // Her 4 saniyede bir değiştir
+    setInterval(() => {
+        factIndex = (factIndex + 1) % COLD_START_FACTS.length;
+        factText.style.opacity = '0';
+        setTimeout(() => {
+            factText.textContent = COLD_START_FACTS[factIndex];
+            factText.style.opacity = '1';
+        }, 300);
+    }, 4000);
+}
+
+async function checkServerHealth() {
+    // Localhost'ta cold start gösterme
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        state.serverReady = true;
+        return true;
+    }
+    
+    // Önce hızlı bir check yap (3 saniye timeout)
+    // Eğer server zaten sıcaksa, cold start ekranı hiç gösterilmeyecek
+    try {
+        const quickController = new AbortController();
+        const quickTimeout = setTimeout(() => quickController.abort(), 3000);
+        
+        const quickResponse = await fetch(`${BACKEND_URL}/api/health`, {
+            signal: quickController.signal
+        });
+        
+        clearTimeout(quickTimeout);
+        
+        if (quickResponse.ok) {
+            // Server zaten sıcak, cold start göstermeye gerek yok
+            state.serverReady = true;
+            console.log('Server hazır, cold start atlandı');
+            return true;
+        }
+    } catch (error) {
+        // Server yanıt vermedi, cold start modunda olabilir
+        console.log('Server yanıt vermedi, cold start ekranı gösteriliyor...');
+    }
+    
+    // Server yanıt vermedi, şimdi cold start ekranını göster
+    showColdStart();
+    
+    const startTime = Date.now();
+    const maxWait = 180000; // 3 dakika max
+    
+    while (Date.now() - startTime < maxWait) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            
+            const response = await fetch(`${BACKEND_URL}/api/health`, {
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+                state.serverReady = true;
+                hideColdStart();
+                return true;
+            }
+        } catch (error) {
+            // Timeout veya bağlantı hatası - devam et
+            console.log('Server henüz hazır değil, bekleniyor...');
+        }
+        
+        // 2 saniye bekle ve tekrar dene
+        await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+    
+    // Timeout oldu
+    hideColdStart();
+    return false;
+}
 
 // ========================================
 // DOM Elements
@@ -42,11 +198,16 @@ const elements = {
 // ========================================
 // Initialize
 // ========================================
-function init() {
+async function init() {
     loadHistory();
     setupEventListeners();
-    loadTrendingContent('movie'); // Varsayılan olarak filmler
     setupTrendingTabs();
+    
+    // Server health check (cold start handling)
+    await checkServerHealth();
+    
+    // Server hazır olduktan sonra trending içerikleri yükle
+    loadTrendingContent('movie');
 }
 
 // ========================================
@@ -200,13 +361,22 @@ async function loadTrendingContent(type) {
     }
 }
 
+// Hero slider event handler references (for cleanup)
+let heroSliderCleanup = null;
+
 function setupHeroSlider() {
     const slides = document.getElementById('heroSlides');
     const indicatorsContainer = document.getElementById('heroIndicators');
     const prevBtn = document.querySelector('.hero-prev');
     const nextBtn = document.querySelector('.hero-next');
+    const slider = document.getElementById('heroSlider');
 
     if (!slides || heroData.length === 0) return;
+
+    // Cleanup previous event listeners
+    if (heroSliderCleanup) {
+        heroSliderCleanup();
+    }
 
     heroSlideIndex = 0;
     let isPaused = false;
@@ -261,102 +431,126 @@ function setupHeroSlider() {
         goToSlide(heroSlideIndex - 1, triggeredByUser);
     }
 
-    // Listen for animation end on progress bars
-    indicatorsContainer.addEventListener('animationend', (e) => {
+    // Animation end handler
+    function handleAnimationEnd(e) {
         if (e.target.classList.contains('progress-fill') && !isPaused) {
             nextSlide(false);
         }
-    });
+    }
 
-    // Click on indicators
-    indicatorsContainer.addEventListener('click', (e) => {
+    // Indicator click handler
+    function handleIndicatorClick(e) {
         const indicator = e.target.closest('.hero-indicator');
         if (indicator) {
             goToSlide(parseInt(indicator.dataset.index), true);
         }
-    });
+    }
 
-    // Navigation buttons - clone and replace to remove old listeners
+    // Navigation button handlers
+    function handlePrevClick(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        prevSlide(true);
+    }
+
+    function handleNextClick(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        nextSlide(true);
+    }
+
+    // Mouse handlers
+    function handleMouseEnter() {
+        isPaused = true;
+        const activeProgress = indicatorsContainer.querySelector('.hero-indicator.active .progress-fill');
+        if (activeProgress) {
+            activeProgress.style.animationPlayState = 'paused';
+        }
+    }
+
+    function handleMouseLeave() {
+        isPaused = false;
+        const activeProgress = indicatorsContainer.querySelector('.hero-indicator.active .progress-fill');
+        if (activeProgress) {
+            activeProgress.style.animationPlayState = 'running';
+        }
+    }
+
+    // Touch handlers
+    let touchStartX = 0;
+    let touchEndX = 0;
+    let isSwiping = false;
+
+    function handleTouchStart(e) {
+        touchStartX = e.changedTouches[0].screenX;
+        isSwiping = true;
+        isPaused = true;
+        const activeProgress = indicatorsContainer.querySelector('.hero-indicator.active .progress-fill');
+        if (activeProgress) {
+            activeProgress.style.animationPlayState = 'paused';
+        }
+    }
+
+    function handleTouchMove(e) {
+        if (!isSwiping) return;
+        touchEndX = e.changedTouches[0].screenX;
+    }
+
+    function handleTouchEnd(e) {
+        if (!isSwiping) return;
+        touchEndX = e.changedTouches[0].screenX;
+        const swipeThreshold = 50;
+        const diff = touchStartX - touchEndX;
+        
+        if (Math.abs(diff) > swipeThreshold) {
+            if (diff > 0) {
+                nextSlide(true);
+            } else {
+                prevSlide(true);
+            }
+        }
+        
+        isSwiping = false;
+        isPaused = false;
+        const activeProgress = indicatorsContainer.querySelector('.hero-indicator.active .progress-fill');
+        if (activeProgress) {
+            activeProgress.style.animationPlayState = 'running';
+        }
+    }
+
+    // Add event listeners
+    indicatorsContainer.addEventListener('animationend', handleAnimationEnd);
+    indicatorsContainer.addEventListener('click', handleIndicatorClick);
+    
+    // Clone and replace buttons to remove old listeners
     const newPrevBtn = prevBtn.cloneNode(true);
     const newNextBtn = nextBtn.cloneNode(true);
     prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
     nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
+    
+    newPrevBtn.addEventListener('click', handlePrevClick);
+    newNextBtn.addEventListener('click', handleNextClick);
 
-    newPrevBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        prevSlide(true);
-    });
-
-    newNextBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        nextSlide(true);
-    });
-
-    // Pause on hover
-    const slider = document.getElementById('heroSlider');
     if (slider) {
-        slider.addEventListener('mouseenter', () => {
-            isPaused = true;
-            const activeProgress = indicatorsContainer.querySelector('.hero-indicator.active .progress-fill');
-            if (activeProgress) {
-                activeProgress.style.animationPlayState = 'paused';
-            }
-        });
-        
-        slider.addEventListener('mouseleave', () => {
-            isPaused = false;
-            const activeProgress = indicatorsContainer.querySelector('.hero-indicator.active .progress-fill');
-            if (activeProgress) {
-                activeProgress.style.animationPlayState = 'running';
-            }
-        });
-        
-        // Touch/Swipe support for mobile
-        let touchStartX = 0;
-        let touchEndX = 0;
-        let isSwiping = false;
-        
-        slider.addEventListener('touchstart', (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-            isSwiping = true;
-            isPaused = true;
-            const activeProgress = indicatorsContainer.querySelector('.hero-indicator.active .progress-fill');
-            if (activeProgress) {
-                activeProgress.style.animationPlayState = 'paused';
-            }
-        }, { passive: true });
-        
-        slider.addEventListener('touchmove', (e) => {
-            if (!isSwiping) return;
-            touchEndX = e.changedTouches[0].screenX;
-        }, { passive: true });
-        
-        slider.addEventListener('touchend', (e) => {
-            if (!isSwiping) return;
-            touchEndX = e.changedTouches[0].screenX;
-            const swipeThreshold = 50;
-            const diff = touchStartX - touchEndX;
-            
-            if (Math.abs(diff) > swipeThreshold) {
-                if (diff > 0) {
-                    // Swipe left - next slide
-                    nextSlide(true);
-                } else {
-                    // Swipe right - prev slide
-                    prevSlide(true);
-                }
-            }
-            
-            isSwiping = false;
-            isPaused = false;
-            const activeProgress = indicatorsContainer.querySelector('.hero-indicator.active .progress-fill');
-            if (activeProgress) {
-                activeProgress.style.animationPlayState = 'running';
-            }
-        }, { passive: true });
+        slider.addEventListener('mouseenter', handleMouseEnter);
+        slider.addEventListener('mouseleave', handleMouseLeave);
+        slider.addEventListener('touchstart', handleTouchStart, { passive: true });
+        slider.addEventListener('touchmove', handleTouchMove, { passive: true });
+        slider.addEventListener('touchend', handleTouchEnd, { passive: true });
     }
+
+    // Store cleanup function
+    heroSliderCleanup = () => {
+        indicatorsContainer.removeEventListener('animationend', handleAnimationEnd);
+        indicatorsContainer.removeEventListener('click', handleIndicatorClick);
+        if (slider) {
+            slider.removeEventListener('mouseenter', handleMouseEnter);
+            slider.removeEventListener('mouseleave', handleMouseLeave);
+            slider.removeEventListener('touchstart', handleTouchStart);
+            slider.removeEventListener('touchmove', handleTouchMove);
+            slider.removeEventListener('touchend', handleTouchEnd);
+        }
+    };
 
     // Start first slide
     goToSlide(0, false);

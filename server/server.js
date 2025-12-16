@@ -29,6 +29,15 @@ app.get('/', (req, res) => {
     res.json({ status: 'ok', message: 'AI Film Öneri Backend is running!' });
 });
 
+// Health check endpoint for cold start detection
+app.get('/api/health', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
+});
+
 // AI Recommendation endpoint
 app.post('/api/recommend', async (req, res) => {
     try {

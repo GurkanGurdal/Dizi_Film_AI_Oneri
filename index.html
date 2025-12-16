@@ -20,6 +20,59 @@
 </head>
 
 <body>
+    <!-- Cold Start Loading Screen (hidden by default, shown only in production when needed) -->
+    <div class="cold-start-overlay hidden" id="coldStartOverlay">
+        <div class="cold-start-content">
+            <!-- Cinema Loader Animation -->
+            <div class="cinema-loader">
+                <!-- Clapperboard -->
+                <div class="clapperboard">
+                    <div class="clapper-top"></div>
+                    <div class="clapper-bottom">
+                        <div class="clapper-lines">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Film Strip -->
+                <div class="film-strip-loader">
+                    <div class="film-cell"></div>
+                    <div class="film-cell"></div>
+                    <div class="film-cell"></div>
+                    <div class="film-cell"></div>
+                    <div class="film-cell"></div>
+                </div>
+                
+                <!-- Glowing dots -->
+                <div class="loader-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+            
+            <!-- Status Text -->
+            <div class="cold-start-text">
+                <h2 class="cold-start-title">🎬 Server Başlatılıyor</h2>
+                <p class="cold-start-subtitle">Cold Start Modu</p>
+                <p class="cold-start-info">Server uyku modundan uyanıyor...<br>Bu işlem 30 saniye - 2 dakika sürebilir.</p>
+            </div>
+            
+            <!-- Bekleme Süresi -->
+            <div class="cold-start-timer">
+                <span class="timer-text" id="coldStartTime">⏱️ 0 saniye</span>
+            </div>
+            
+            <!-- Fun Facts -->
+            <div class="cold-start-facts">
+                <p class="fact-text" id="coldStartFact">💡 Biliyor muydunuz? Film makaraları saniyede 24 kare gösterir!</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Background Animation -->
     <div class="bg-animation">
         <div class="bg-gradient"></div>

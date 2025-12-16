@@ -78,6 +78,7 @@
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
+    display: none !important;
 }
 
 .cold-start-content {
@@ -3595,9 +3596,11 @@ textarea {
 }
 
 .actor-modal-body {
+    display: flex;
     flex-direction: row;
     gap: var(--spacing-xl);
     position: relative;
+    padding: var(--spacing-xl);
 }
 
 .actor-modal-body::before {
@@ -3801,11 +3804,13 @@ textarea {
 @media (max-width: 768px) {
     .actor-modal .modal-container {
         max-width: 95%;
-        margin: 10px;
+        width: 95%;
+        margin: 10px auto;
     }
     
     .actor-modal .modal-content {
         max-height: 90vh;
+        overflow-y: auto;
     }
     
     .actor-modal-body {
@@ -3824,43 +3829,59 @@ textarea {
         width: 140px;
         height: 210px;
         flex-shrink: 0;
+        margin: 0 auto;
     }
     
     .actor-info {
         width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
     
     .actor-name {
         font-size: 1.4rem;
+        text-align: center;
     }
     
     .actor-meta {
         justify-content: center;
         font-size: 0.8rem;
         gap: var(--spacing-sm);
+        flex-wrap: wrap;
     }
     
     .actor-birthday,
     .actor-birthplace {
         flex-wrap: wrap;
         justify-content: center;
+        text-align: center;
     }
     
     .actor-biography {
         font-size: 0.85rem;
         text-align: left;
+        width: 100%;
+    }
+    
+    .actor-known-for {
+        width: 100%;
     }
     
     .known-for-title {
         font-size: 0.9rem;
+        justify-content: center;
     }
     
     .known-for-container {
+        display: flex;
         flex-direction: row;
+        align-items: center;
+        width: 100%;
     }
     
     .known-for-list {
-        width: 100%;
+        flex: 1;
         justify-content: flex-start;
         padding: var(--spacing-sm) 0;
     }
@@ -3877,13 +3898,25 @@ textarea {
     .known-for-title-text {
         font-size: 0.7rem;
     }
+    
+    .actor-actions {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
 }
 
 @media (max-width: 480px) {
     .actor-modal .modal-container {
         max-width: 100%;
-        margin: 5px;
-        border-radius: var(--radius-lg);
+        width: 100%;
+        margin: 0;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        max-height: 95vh;
+    }
+    
+    .actor-modal-body {
+        padding: var(--spacing-sm);
     }
     
     .actor-photo-container {
@@ -3911,6 +3944,12 @@ textarea {
     .known-for-poster {
         width: 75px;
         height: 112px;
+    }
+    
+    .known-for-container .cast-arrow {
+        width: 28px;
+        height: 28px;
+        font-size: 1.2rem;
     }
 }
 

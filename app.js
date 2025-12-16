@@ -40,6 +40,7 @@ let state = {
 // Cold Start Handler
 // ========================================
 let coldStartInterval = null;
+let factInterval = null;
 let coldStartTime = 0;
 let factIndex = 0;
 
@@ -58,10 +59,16 @@ function hideColdStart() {
         const timeText = document.getElementById('coldStartTime');
         if (timeText) timeText.textContent = '✅ Hazır!';
         
+        // Timer ve fact interval'ı hemen durdur
+        stopColdStartTimer();
+        if (factInterval) {
+            clearInterval(factInterval);
+            factInterval = null;
+        }
+        
         // Biraz bekle ve kapat
         setTimeout(() => {
             overlay.classList.add('hidden');
-            stopColdStartTimer();
         }, 500);
     }
 }
@@ -97,11 +104,17 @@ function rotateFacts() {
     const factText = document.getElementById('coldStartFact');
     if (!factText) return;
     
+    // Önceki interval varsa temizle
+    if (factInterval) {
+        clearInterval(factInterval);
+    }
+    
     // İlk fact'i göster
+    factIndex = 0;
     factText.textContent = COLD_START_FACTS[factIndex];
     
     // Her 4 saniyede bir değiştir
-    setInterval(() => {
+    factInterval = setInterval(() => {
         factIndex = (factIndex + 1) % COLD_START_FACTS.length;
         factText.style.opacity = '0';
         setTimeout(() => {

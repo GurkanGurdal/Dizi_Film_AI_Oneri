@@ -3977,6 +3977,55 @@ textarea {
     .modal-description {
         text-align: center;
     }
+    
+    /* Cast section mobile */
+    .cast-item {
+        width: 80px;
+    }
+    
+    .cast-photo {
+        height: 96px;
+    }
+    
+    .cast-info {
+        padding: var(--spacing-xs);
+    }
+    
+    .cast-name {
+        font-size: 0.7rem;
+    }
+    
+    .cast-character {
+        font-size: 0.6rem;
+    }
+    
+    .cast-photo .no-photo {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .cast-item {
+        width: 70px;
+    }
+    
+    .cast-photo {
+        height: 84px;
+    }
+    
+    .cast-name {
+        font-size: 0.65rem;
+    }
+    
+    .cast-character {
+        font-size: 0.55rem;
+    }
+    
+    .cast-arrow {
+        width: 28px;
+        height: 28px;
+        font-size: 1.2rem;
+    }
 }
 
 /* ========================================

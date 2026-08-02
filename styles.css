@@ -2411,7 +2411,7 @@ textarea {
    - Mobil (<=768px): ustte app bar
    Ayni HTML iki forma CSS ile sokulur; JS mantigi degismez. */
 
-/* --- MASAUSTU: bar gizli, buton sag altta yuzer --- */
+/* --- MASAUSTU: barda ortalanmis marka, kutuphane butonu sol altta yuzer --- */
 .top-bar {
     position: fixed;
     top: 0;
@@ -2420,15 +2420,51 @@ textarea {
     height: 60px;
     background: transparent;
     border-bottom: 1px solid transparent;
-    pointer-events: none; /* saydam bar tiklamalari engellemesin */
+    /* Saydamken altindaki icerige tiklamayi engellemesin;
+       icindeki ogeler pointer-events'i geri aciyor */
+    pointer-events: none;
+    transition: background var(--transition-normal),
+                border-color var(--transition-normal),
+                backdrop-filter var(--transition-normal);
     z-index: 800;
 }
 
-/* Masaustunde marka gorunmez; sayfa basligi zaten ayni ismi tasiyor */
-.top-bar-brand {
-    display: none;
+
+/* Sayfa tepedeyken saydam (bastaki dev baslikla cakismasin),
+   asagi kaydirilinca cam efektiyle belirir ve tiklamalari yakalar */
+.top-bar.scrolled {
+    background: rgba(18, 18, 26, 0.7);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border-bottom-color: var(--border-color);
+    pointer-events: auto;
 }
 
+.top-bar-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    text-decoration: none;
+    color: var(--text-primary);
+    min-width: 0;
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity var(--transition-normal), transform var(--transition-normal);
+}
+
+.top-bar.scrolled .top-bar-brand {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.top-bar-brand:hover .top-bar-name {
+    color: var(--accent-primary);
+}
+
+/* Marka ortalanir; kutuphane butonu masaustunde bar icinde degil,
+   sol altta yuzdugu icin bar tek ogeli */
 .top-bar-inner {
     max-width: 900px;
     height: 100%;
@@ -2436,7 +2472,7 @@ textarea {
     padding: 0 var(--spacing-lg);
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: var(--spacing-md);
 }
 
@@ -2455,6 +2491,11 @@ textarea {
     overflow: hidden;
     text-overflow: ellipsis;
     transition: color var(--transition-fast);
+}
+
+/* Sabit bar sayfanin ustunu kapatmasin */
+.container {
+    padding-top: calc(60px + var(--spacing-lg));
 }
 
 /* Masaustunde buton sol altta yuzer: bar akistan cikarilir.
@@ -2478,7 +2519,8 @@ textarea {
     backdrop-filter: blur(16px) saturate(160%);
     -webkit-backdrop-filter: blur(16px) saturate(160%);
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
-    pointer-events: auto; /* bar pointer-events:none, buton tiklanabilir kalmali */
+    /* Bar saydamken pointer-events:none; buton her durumda tiklanabilir */
+    pointer-events: auto;
     transition: var(--transition-fast);
     flex-shrink: 0;
     z-index: 800;
@@ -2521,46 +2563,16 @@ textarea {
     display: none;
 }
 
-/* --- MOBIL (<=768px): ustte app bar --- */
+/* --- MOBIL (<=768px): kutuphane butonu bar icine tasinir ---
+   Masaustunde bar yalnizca ortalanmis markayi tasir, buton sol altta
+   yuzer. Mobilde ekran dar oldugu icin buton barin sagina alinir. */
 @media (max-width: 768px) {
-    .top-bar {
-        pointer-events: auto;
-        background: transparent;
-        transition: background var(--transition-normal),
-                    border-color var(--transition-normal),
-                    backdrop-filter var(--transition-normal);
+    /* Marka ortada degil solda; sagini buton paylasir */
+    .top-bar-inner {
+        justify-content: space-between;
     }
 
-    /* Sayfa tepedeyken saydam, kaydirilinca cam efektiyle belirir */
-    .top-bar.scrolled {
-        background: rgba(18, 18, 26, 0.7);
-        backdrop-filter: blur(20px) saturate(160%);
-        -webkit-backdrop-filter: blur(20px) saturate(160%);
-        border-bottom-color: var(--border-color);
-    }
-
-    /* Marka yalnizca bar belirdiginde gorunur; tepedeyken sayfa basligi
-       zaten ayni ismi buyuk puntoyla gosteriyor, tekrar olmasin */
-    .top-bar-brand {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        text-decoration: none;
-        color: var(--text-primary);
-        min-width: 0;
-        opacity: 0;
-        transform: translateY(-4px);
-        pointer-events: none;
-        transition: opacity var(--transition-normal), transform var(--transition-normal);
-    }
-
-    .top-bar.scrolled .top-bar-brand {
-        opacity: 1;
-        transform: translateY(0);
-        pointer-events: auto;
-    }
-
-    /* Buton bar icine geri doner (yuzen konumdan cikar) */
+    /* Buton yuzen konumdan cikip bar akisina girer */
     .library-fab {
         position: static;
         padding: 7px var(--spacing-md);
@@ -2573,11 +2585,6 @@ textarea {
     .library-fab:hover {
         transform: none;
         box-shadow: none;
-    }
-
-    /* Sabit bar sayfanin ustunu kapatmasin */
-    .container {
-        padding-top: calc(60px + var(--spacing-lg));
     }
 }
 

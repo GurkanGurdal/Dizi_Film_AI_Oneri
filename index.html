@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260802-library5">
+    <link rel="stylesheet" href="styles.css?v=20260802-library6">
 </head>
 
 <body>
@@ -110,6 +110,21 @@
             <div class="star"></div>
             <div class="star"></div>
             <div class="star"></div>
+        </div>
+    </div>
+
+    <!-- Top Bar -->
+    <div class="top-bar" id="topBar">
+        <div class="top-bar-inner">
+            <a class="top-bar-brand" href="#" aria-label="Başa dön">
+                <img src="assets/movie_ai.png" alt="" class="top-bar-logo">
+                <span class="top-bar-name">AI Film &amp; Dizi</span>
+            </a>
+            <button class="library-fab" id="libraryFab" aria-label="Film kütüphanem" aria-expanded="false">
+                <span class="library-fab-icon">🎞️</span>
+                <span class="library-fab-text">Kütüphanem</span>
+                <span class="library-fab-count" id="libraryFabCount">0</span>
+            </button>
         </div>
     </div>
 
@@ -331,12 +346,6 @@
         </footer>
     </div>
 
-    <!-- Library Floating Button -->
-    <button class="library-fab" id="libraryFab" aria-label="Film kütüphanem" aria-expanded="false">
-        <span class="library-fab-icon">🎞️</span>
-        <span class="library-fab-count" id="libraryFabCount">0</span>
-    </button>
-
     <!-- Library Side Panel -->
     <div class="library-panel-overlay" id="libraryPanelOverlay"></div>
     <aside class="library-panel" id="libraryPanel" aria-hidden="true" aria-label="Film kütüphanem">
@@ -479,7 +488,7 @@
     </div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="app.js?v=20260802-library5"></script>
+    <script src="app.js?v=20260802-library6"></script>
 </body>
 
 </html>

@@ -2406,62 +2406,109 @@ textarea {
    Film Kütüphanem - Float Buton + Yan Panel
    ======================================== */
 
-/* Sol altta sabit duran acma butonu */
-.library-fab {
+/* Sayfanin ustunde sabit duran ince bar */
+.top-bar {
     position: fixed;
-    left: var(--spacing-lg);
-    bottom: var(--spacing-lg);
-    width: 56px;
+    top: 0;
+    left: 0;
+    right: 0;
     height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--accent-gradient);
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 4px 20px var(--accent-glow);
-    transition: var(--transition-fast);
+    background: rgba(10, 10, 20, 0.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border-color);
     z-index: 800;
 }
 
+.top-bar-inner {
+    max-width: 900px;
+    height: 100%;
+    margin: 0 auto;
+    padding: 0 var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+}
+
+.top-bar-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    text-decoration: none;
+    color: var(--text-primary);
+    min-width: 0;
+}
+
+.top-bar-logo {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.top-bar-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Sabit bar sayfanin ustunu kapatmasin */
+.container {
+    padding-top: calc(56px + var(--spacing-lg));
+}
+
+/* Kutuphane acma butonu (bar icinde) */
+.library-fab {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: var(--accent-gradient);
+    border: none;
+    border-radius: var(--radius-full);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    flex-shrink: 0;
+}
+
 .library-fab:hover {
-    transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 8px 28px var(--accent-glow);
+    box-shadow: 0 4px 16px var(--accent-glow);
+    transform: translateY(-1px);
+}
+
+.library-fab.panel-open {
+    box-shadow: 0 0 0 2px var(--accent-primary) inset;
 }
 
 .library-fab-icon {
-    font-size: 1.5rem;
+    font-size: 1rem;
     line-height: 1;
 }
 
 /* Kayitli yapim sayisi rozeti */
 .library-fab-count {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    min-width: 22px;
-    height: 22px;
-    padding: 0 6px;
-    display: flex;
+    min-width: 20px;
+    padding: 1px 6px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: var(--bg-secondary);
-    border: 2px solid var(--bg-primary);
-    border-radius: 11px;
-    color: var(--text-primary);
-    font-size: 0.7rem;
+    background: rgba(0, 0, 0, 0.28);
+    border-radius: var(--radius-full);
+    color: #fff;
+    font-size: 0.72rem;
     font-weight: 700;
 }
 
 /* Kutuphane bosken rozet gizlenir */
 .library-fab-count.empty {
     display: none;
-}
-
-/* Panel acikken butonun ikonu degisir gibi kucuk vurgu */
-.library-fab.panel-open {
-    transform: scale(0.92);
 }
 
 /* Panelin arkasindaki karartma */
@@ -2670,22 +2717,24 @@ textarea {
     font-size: 0.75rem;
 }
 
-/* Dar ekranlarda panel tam genislik, buton biraz kucuk */
+/* Dar ekranlarda panel tam genislik, bar sadelesir */
 @media (max-width: 600px) {
     .library-panel {
         width: 100%;
         max-width: 100%;
     }
 
-    .library-fab {
-        width: 50px;
-        height: 50px;
-        left: var(--spacing-md);
-        bottom: var(--spacing-md);
+    .top-bar-inner {
+        padding: 0 var(--spacing-md);
     }
 
-    .library-fab-icon {
-        font-size: 1.3rem;
+    /* Dar ekranda buton metni gizlenir, ikon + sayi kalir */
+    .library-fab-text {
+        display: none;
+    }
+
+    .library-fab {
+        padding: var(--spacing-xs) var(--spacing-sm);
     }
 }
 

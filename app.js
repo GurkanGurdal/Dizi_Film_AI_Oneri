@@ -1022,6 +1022,68 @@ function selectMood(btn) {
 // ========================================
 // Recommendation Logic
 // ========================================
+// Backend'e oneri istegi atar ve ham API yanitini dondurur
+async function callRecommendAPI(prompt) {
+    const response = await fetch(`${BACKEND_URL}/api/recommend`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ prompt })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `API Hatası: ${response.status}`);
+    }
+
+    return response.json();
+}
+
+// Uydurma cikip elenen onerilerin yerine AI'dan yenilerini ister.
+// Yeni oneriler de TMDB'de dogrulanir; hala eksik varsa sinirli sayida tekrar denenir.
+const BACKFILL_MAX_ATTEMPTS = 2;
+
+async function backfillRecommendations(validItems, targetCount, userPrompt) {
+    let items = validItems;
+
+    for (let attempt = 1; attempt <= BACKFILL_MAX_ATTEMPTS; attempt++) {
+        const missing = targetCount - items.length;
+        if (missing <= 0) break;
+
+        // Zaten elimizde olanlari tekrar onermemesi icin isimlerini bildir
+        const existingTitles = items.map(m => m.title).filter(Boolean);
+
+        console.log(`Eksik ${missing} oneri icin tamamlama denemesi ${attempt}/${BACKFILL_MAX_ATTEMPTS}`);
+
+        try {
+            const prompt = buildBackfillPrompt(userPrompt, existingTitles, missing);
+            const data = await callRecommendAPI(prompt);
+            const content = data.choices?.[0]?.message?.content;
+            if (!content) break;
+
+            const extras = parseRecommendations(content);
+            if (extras.length === 0) break;
+
+            // Ayni yapimin tekrar gelmesini engelle
+            const seen = new Set(existingTitles.map(t => t.toLowerCase()));
+            const fresh = extras.filter(r => r.title && !seen.has(r.title.toLowerCase()));
+            if (fresh.length === 0) break;
+
+            const { items: verified } = await fetchTMDBData(fresh.slice(0, missing));
+            if (verified.length === 0) continue; // hepsi yine uydurma cikti, tekrar dene
+
+            items = items.concat(verified).slice(0, targetCount);
+        } catch (error) {
+            // Tamamlama basarisiz olursa eldeki gecerli onerilerle devam et
+            console.warn('Oneri tamamlama basarisiz:', error.message);
+            break;
+        }
+    }
+
+    return items;
+}
+
 async function getRecommendation() {
     const userPrompt = elements.userPrompt.value.trim();
 
@@ -1057,22 +1119,7 @@ async function getRecommendation() {
     elements.resultsSection.classList.add('visible');
 
     try {
-        // Try different models if one fails
-        // Call backend API
-        const response = await fetch(`${BACKEND_URL}/api/recommend`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ prompt })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || `API Hatası: ${response.status}`);
-        }
-
-        const data = await response.json();
+        const data = await callRecommendAPI(prompt);
 
         if (data.choices && data.choices[0] && data.choices[0].message) {
             const aiResponse = data.choices[0].message.content;
@@ -1083,7 +1130,17 @@ async function getRecommendation() {
 
             if (recommendations.length > 0) {
                 // Step 2: Fetch poster data from TMDB
-                const enrichedRecommendations = await fetchTMDBData(recommendations);
+                const { items, skipped } = await fetchTMDBData(recommendations);
+                let enrichedRecommendations = items;
+
+                // Step 2b: Uydurma cikan oneriler elendiyse yerlerine yenilerini iste
+                if (skipped.length > 0) {
+                    enrichedRecommendations = await backfillRecommendations(
+                        enrichedRecommendations,
+                        recommendations.length,
+                        userPrompt
+                    );
+                }
 
                 // TMDB'de hicbiri dogrulanamadiysa AI tamamen uydurmus demektir;
                 // sahte listeyi gostermek yerine kullaniciyi tekrar denemeye yonlendir
@@ -1154,6 +1211,55 @@ Yanıtını SADECE JSON formatında ver:
 [{"title": "Orijinal ad", "titleTr": "Türkçe ad", "year": "Yıl", "reason": "Kısa sebep"}]
 
 5 adet ${contentType} öner. SADECE JSON ver, başka yazı YAZMA!`;
+
+    return prompt;
+}
+
+// Elenen onerilerin yerine yenilerini istemek icin kullanilan prompt.
+// Kullanicinin tercihleri korunur; daha once verilen isimler haric tutulur.
+function buildBackfillPrompt(userPrompt, existingTitles, missingCount) {
+    const contentType = state.contentType === 'film' ? 'film' : 'dizi';
+    const categories = state.selectedCategories.length > 0
+        ? state.selectedCategories.join(', ')
+        : 'herhangi bir kategori';
+
+    const moodMap = {
+        'mutlu': 'mutlu ve neşeli',
+        'uzgun': 'üzgün ve duygusal',
+        'heyecanli': 'heyecanlı ve enerjik',
+        'rahat': 'rahat ve huzurlu',
+        'nostaljik': 'nostaljik'
+    };
+    const mood = state.selectedMood ? moodMap[state.selectedMood] : null;
+
+    let prompt = `Sen bir ${contentType} öneri uzmanısın.
+
+Tercihler:
+- İçerik Türü: ${contentType}
+- Kategoriler: ${categories}`;
+
+    if (mood) {
+        prompt += `\n- Ruh Hali: ${mood}`;
+    }
+
+    if (userPrompt) {
+        prompt += `\n\n⚠️ KULLANICININ İSTEĞİ (bunu diğer tercihlerden öncelikli tut): "${userPrompt}"`;
+    }
+
+    if (existingTitles.length > 0) {
+        prompt += `\n\nBU YAPIMLAR ZATEN ÖNERİLDİ, TEKRAR ÖNERME:
+${existingTitles.map(t => `- ${t}`).join('\n')}`;
+    }
+
+    prompt += `
+
+ÖNEMLİ: Sadece GERÇEKTEN VAR OLAN yapımları öner. Emin olmadığın isimleri YAZMA.
+Uydurma isim verirsen öneri kullanılamaz.
+
+Yanıtını SADECE JSON formatında ver:
+[{"title": "Orijinal ad", "titleTr": "Türkçe ad", "year": "Yıl", "reason": "Kısa sebep"}]
+
+${missingCount} adet ${contentType} öner. SADECE JSON ver, başka yazı YAZMA!`;
 
     return prompt;
 }
@@ -1387,7 +1493,8 @@ async function fetchTMDBData(recommendations) {
         console.warn(`${skipped.length} oneri TMDB'de dogrulanamadigi icin elendi:`, skipped);
     }
 
-    return enrichedData;
+    // skipped listesi cagirana da lazim: elenenlerin yerine yenisi istenecek
+    return { items: enrichedData, skipped };
 }
 
 // ========================================

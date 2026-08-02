@@ -36,6 +36,7 @@ let state = {
     selectedCategories: [],
     selectedMood: null,
     history: [],
+    library: [], // Kullanicinin kaydettigi yapimlar
     serverReady: false
 };
 
@@ -208,7 +209,10 @@ const elements = {
     resultsContainer: document.getElementById('resultsContainer'),
     historySection: document.getElementById('historySection'),
     historyContainer: document.getElementById('historyContainer'),
-    clearHistoryBtn: document.getElementById('clearHistory')
+    clearHistoryBtn: document.getElementById('clearHistory'),
+    librarySection: document.getElementById('librarySection'),
+    libraryContainer: document.getElementById('libraryContainer'),
+    clearLibraryBtn: document.getElementById('clearLibrary')
 };
 
 // ========================================
@@ -216,6 +220,7 @@ const elements = {
 // ========================================
 async function init() {
     loadHistory();
+    loadLibrary();
     setupEventListeners();
     setupTrendingTabs();
     
@@ -772,6 +777,10 @@ function setupEventListeners() {
 
     // Clear History
     elements.clearHistoryBtn.addEventListener('click', clearHistory);
+
+    if (elements.clearLibraryBtn) {
+        elements.clearLibraryBtn.addEventListener('click', clearLibrary);
+    }
 
     // Enter key to submit
     elements.userPrompt.addEventListener('keydown', (e) => {
@@ -1561,6 +1570,166 @@ function displayError(message) {
 }
 
 // ========================================
+// Library Functions
+// ========================================
+const LIBRARY_STORAGE_KEY = 'movieLibrary';
+
+function loadLibrary() {
+    try {
+        const saved = localStorage.getItem(LIBRARY_STORAGE_KEY);
+        state.library = saved ? JSON.parse(saved) : [];
+        if (!Array.isArray(state.library)) state.library = [];
+    } catch (error) {
+        console.warn('Kutuphane okunamadi:', error.message);
+        state.library = [];
+    }
+    renderLibrary();
+}
+
+function persistLibrary() {
+    try {
+        localStorage.setItem(LIBRARY_STORAGE_KEY, JSON.stringify(state.library));
+    } catch (error) {
+        // Kota dolabilir; kullaniciyi engellemek yerine uyar
+        console.warn('Kutuphane kaydedilemedi:', error.message);
+    }
+}
+
+// Ayni yapimi iki kez eklememek icin kimlik uretir.
+// TMDB id'si varsa o kullanilir; yoksa baslik+yil kombinasyonuna dusulur.
+function getLibraryKey(movie) {
+    if (movie.id) return `tmdb:${movie.mediaType || 'movie'}:${movie.id}`;
+    const title = (movie.title || movie.titleTr || '').toLowerCase().trim();
+    return `title:${title}:${movie.year || ''}`;
+}
+
+function isInLibrary(movie) {
+    const key = getLibraryKey(movie);
+    return state.library.some(m => getLibraryKey(m) === key);
+}
+
+function addToLibrary(movie) {
+    if (isInLibrary(movie)) return false;
+
+    // Kartlari cizmek icin gereken alanlari sakla; buyuk alanlari (cast,
+    // providers, overview) tasimaya gerek yok, detay modali TMDB'den ceker
+    state.library.unshift({
+        id: movie.id || null,
+        title: movie.title || null,
+        titleTr: movie.titleTr || null,
+        year: movie.year || null,
+        poster: movie.poster || null,
+        backdrop: movie.backdrop || null,
+        rating: movie.rating || null,
+        overview: movie.overview || null,
+        mediaType: movie.mediaType || 'movie',
+        tmdbUrl: movie.tmdbUrl || null,
+        addedAt: new Date().toLocaleString('tr-TR')
+    });
+
+    persistLibrary();
+    renderLibrary();
+    return true;
+}
+
+function removeFromLibrary(key) {
+    const before = state.library.length;
+    state.library = state.library.filter(m => getLibraryKey(m) !== key);
+    if (state.library.length !== before) {
+        persistLibrary();
+        renderLibrary();
+    }
+}
+
+function clearLibrary() {
+    if (state.library.length === 0) return;
+    if (!confirm('Kütüphanendeki tüm yapımlar silinecek. Emin misin?')) return;
+    state.library = [];
+    persistLibrary();
+    renderLibrary();
+}
+
+function renderLibrary() {
+    const section = document.getElementById('librarySection');
+    const container = document.getElementById('libraryContainer');
+    if (!section || !container) return;
+
+    if (state.library.length === 0) {
+        section.classList.remove('visible');
+        container.innerHTML = '';
+        return;
+    }
+
+    section.classList.add('visible');
+    container.innerHTML = state.library.map((movie, index) => {
+        const posterStyle = movie.poster
+            ? `background-image: url('${movie.poster}')`
+            : `background: linear-gradient(135deg, #1a1a2e, #16213e)`;
+
+        const ratingBadge = movie.rating
+            ? `<div class="rating-badge">⭐ ${movie.rating}</div>`
+            : '';
+
+        const key = getLibraryKey(movie);
+
+        return `
+            <div class="poster-card" onclick="openLibraryMovie(${index})">
+                <div class="poster-image" style="${posterStyle}">
+                    ${!movie.poster ? '<div class="no-poster">🎬</div>' : ''}
+                    ${ratingBadge}
+                    <button class="library-remove-btn"
+                            onclick="event.stopPropagation(); removeFromLibrary('${key.replace(/'/g, "\\'")}')"
+                            title="Kütüphaneden çıkar">✕</button>
+                </div>
+                <div class="poster-info">
+                    <h3 class="poster-title">${movie.titleTr || movie.title}</h3>
+                    ${movie.year ? `<span class="poster-year">${movie.year}</span>` : ''}
+                </div>
+                <div class="poster-overlay">
+                    <span class="detail-hint">Detay için tıkla</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Kutuphanedeki karta tiklaninca detay modalini acar.
+// TMDB id'si varsa guncel veriyle (oyuncu, fragman, saglayici) acilir.
+function openLibraryMovie(index) {
+    const movie = state.library[index];
+    if (!movie) return;
+
+    if (movie.id) {
+        openTrendingModal(movie.id, movie.mediaType || 'movie', movie.poster);
+    } else {
+        openMovieModal(movie);
+    }
+}
+
+// Modaldaki "Kutuphaneye Ekle" butonunun gorunumunu gunceller
+function updateLibraryButton(movie) {
+    const btn = document.getElementById('modalLibraryBtn');
+    if (!btn) return;
+
+    const inLibrary = isInLibrary(movie);
+    btn.classList.toggle('in-library', inLibrary);
+    btn.querySelector('.library-icon').textContent = inLibrary ? '✓' : '➕';
+    btn.querySelector('.library-text').textContent = inLibrary
+        ? 'Kütüphanemde'
+        : 'Kütüphaneye Ekle';
+
+    // Her acilista yeni film icin dinleyici kurulur; eskisini temizle
+    btn.onclick = () => {
+        if (isInLibrary(movie)) {
+            removeFromLibrary(getLibraryKey(movie));
+        } else {
+            addToLibrary(movie);
+        }
+        updateLibraryButton(movie);
+    };
+}
+
+// ========================================
 // History Functions
 // ========================================
 function loadHistory() {
@@ -1764,6 +1933,9 @@ function openMovieModal(indexOrMovie) {
     } else {
         modalTrailerBtn.style.display = 'none';
     }
+
+    // Set Library button (ekle / kutuphanemde durumu)
+    updateLibraryButton(movie);
 
     // Show modal
     modal.classList.add('active');

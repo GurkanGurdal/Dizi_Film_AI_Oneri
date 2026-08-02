@@ -2402,6 +2402,53 @@ textarea {
     display: block;
 }
 
+/* Film Kütüphanem */
+.library-section {
+    display: none;
+}
+
+.library-section.visible {
+    display: block;
+}
+
+/* Kütüphane kartındaki çıkarma butonu */
+.library-remove-btn {
+    position: absolute;
+    top: var(--spacing-sm);
+    left: var(--spacing-sm);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: #fff;
+    font-size: 0.85rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: var(--transition-fast);
+    z-index: 2;
+}
+
+.poster-card:hover .library-remove-btn {
+    opacity: 1;
+}
+
+.library-remove-btn:hover {
+    background: rgba(220, 38, 38, 0.9);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: scale(1.1);
+}
+
+/* Dokunmatik cihazlarda hover olmadigi icin buton hep gorunur */
+@media (hover: none) {
+    .library-remove-btn {
+        opacity: 1;
+    }
+}
+
 .history-header {
     display: flex;
     align-items: center;
@@ -4646,6 +4693,48 @@ textarea {
     opacity: 0;
     max-width: 0;
     margin-left: -0.5rem;
+}
+
+/* Kütüphaneye Ekle butonu */
+.modal-library-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.modal-library-btn:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    transform: translateY(-2px);
+}
+
+/* Yapim zaten kutuphanedeyse dolu gorunum */
+.modal-library-btn.in-library {
+    background: var(--accent-gradient);
+    border-color: transparent;
+    color: #fff;
+}
+
+.modal-library-btn.in-library:hover {
+    box-shadow: 0 4px 15px var(--accent-glow);
+    color: #fff;
+}
+
+.modal-library-btn .library-icon {
+    font-size: 1rem;
+    line-height: 1;
 }
 
 /* Trailer Modal */

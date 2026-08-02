@@ -1334,7 +1334,9 @@ async function fetchTMDBData(recommendations) {
                     id: result.id,
                     title: rec.title,
                     titleTr: detailsTrData.title || detailsTrData.name || result.title || result.name,
-                    year: rec.year || (result.release_date || result.first_air_date || '').substring(0, 4),
+                    // Sene bilgisinde TMDB esas alinir; AI'in verdigi yil hatali olabiliyor
+                    // (eski bir filme guncel yil yazmasi gibi). TMDB'de tarih yoksa AI'a dusulur.
+                    year: (result.release_date || result.first_air_date || '').substring(0, 4) || rec.year,
                     poster: originalPoster ? `${TMDB_IMAGE_BASE}${originalPoster}` : null,
                     backdrop: originalBackdrop ? `https://image.tmdb.org/t/p/w1280${originalBackdrop}` : null,
                     overview: detailsTrData.overview || result.overview || 'Açıklama bulunamadı.',

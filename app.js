@@ -1085,6 +1085,12 @@ async function getRecommendation() {
                 // Step 2: Fetch poster data from TMDB
                 const enrichedRecommendations = await fetchTMDBData(recommendations);
 
+                // TMDB'de hicbiri dogrulanamadiysa AI tamamen uydurmus demektir;
+                // sahte listeyi gostermek yerine kullaniciyi tekrar denemeye yonlendir
+                if (enrichedRecommendations.length === 0) {
+                    throw new Error('Öneriler doğrulanamadı. Lütfen tekrar deneyin.');
+                }
+
                 // Step 3: Display the poster cards
                 displayPosterCards(enrichedRecommendations);
                 saveToHistory(userPrompt, enrichedRecommendations);
@@ -1235,6 +1241,7 @@ function parseRecommendations(text) {
 
 async function fetchTMDBData(recommendations) {
     const enrichedData = [];
+    const skipped = []; // TMDB'de dogrulanamayan (muhtemelen uydurma) yapimlar
     const searchType = state.contentType === 'film' ? 'movie' : 'tv';
 
     for (const rec of recommendations) {
@@ -1351,23 +1358,15 @@ async function fetchTMDBData(recommendations) {
                     trailerKey // YouTube fragman key
                 });
             } else {
-                enrichedData.push({
-                    id: null,
-                    title: rec.title,
-                    titleTr: rec.titleTr,
-                    year: rec.year,
-                    poster: null,
-                    overview: null,
-                    rating: null,
-                    reason: rec.reason,
-                    // TMDB'de bulunamadi: link yok, boylece "TMDB'de Goruntule"
-                    // butonu gizlenir (Google'a yonlendirmek yaniltici oluyordu)
-                    tmdbUrl: null,
-                    providers: [],
-                    mediaType: searchType
-                });
+                // TMDB 900 binden fazla yapim iceriyor; arama hem orijinal hem
+                // Turkce baslikla denendigi halde sonuc yoksa bu yapim buyuk
+                // ihtimalle AI tarafindan uydurulmus. Kullaniciya gostermiyoruz.
+                console.warn('TMDB\'de bulunamadi, oneri elendi (muhtemelen uydurma):', rec.title);
+                skipped.push(rec.title);
             }
         } catch (error) {
+            // Buradaki hata TMDB'ye ulasilamamasi demek (ag/API sorunu).
+            // Yapimin sahte oldugu anlamina gelmez, bu yuzden elemiyoruz.
             console.error('TMDB fetch error:', error);
             enrichedData.push({
                 id: null,
@@ -1382,6 +1381,10 @@ async function fetchTMDBData(recommendations) {
                 mediaType: searchType
             });
         }
+    }
+
+    if (skipped.length > 0) {
+        console.warn(`${skipped.length} oneri TMDB'de dogrulanamadigi icin elendi:`, skipped);
     }
 
     return enrichedData;

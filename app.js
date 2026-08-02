@@ -1025,9 +1025,6 @@ function selectMood(btn) {
 async function getRecommendation() {
     const userPrompt = elements.userPrompt.value.trim();
 
-    // Build the prompt
-    const prompt = buildPrompt(userPrompt);
-
     // Show loading state
     elements.recommendBtn.classList.add('loading');
     elements.resultsContainer.innerHTML = `
@@ -1057,6 +1054,13 @@ async function getRecommendation() {
     elements.resultsSection.classList.add('visible');
 
     try {
+        // Once TMDB'den gercek aday havuzunu cek, sonra prompt'a ekle.
+        // Havuz alinamazsa prompt havuzsuz kurulur ve akis eskisi gibi devam eder.
+        const candidatePool = await fetchCandidatePool(userPrompt);
+        console.log(`TMDB aday havuzu: ${candidatePool.length} ${state.contentType}`);
+
+        const prompt = buildPrompt(userPrompt, candidatePool);
+
         // Try different models if one fails
         // Call backend API
         const response = await fetch(`${BACKEND_URL}/api/recommend`, {
@@ -1104,7 +1108,146 @@ async function getRecommendation() {
     }
 }
 
-function buildPrompt(userPrompt) {
+// ========================================
+// TMDB Aday Havuzu (RAG)
+// ========================================
+// AI'in egitim verisi guncel filmleri icermiyor ve sorulunca uyduruyordu.
+// Cozum: onerileri modelin hafizasindan beklemek yerine, TMDB'den gercek
+// filmleri cekip prompt'a koymak. Model bu listeden secim yapar.
+
+// Arayuzdeki kategorilerin TMDB genre ID karsiliklari.
+// Film ve dizi tarafinda ID'ler farkli oldugu icin ayri tutuluyor.
+const TMDB_GENRE_IDS = {
+    film: {
+        'aksiyon': 28,
+        'komedi': 35,
+        'dram': 18,
+        'korku': 27,
+        'bilim-kurgu': 878,
+        'romantik': 10749,
+        'animasyon': 16,
+        'belgesel': 99,
+        'gerilim': 53
+    },
+    dizi: {
+        'aksiyon': 10759,      // Action & Adventure
+        'komedi': 35,
+        'dram': 18,
+        'korku': 9648,         // TV tarafinda korku turu yok, Mystery'e esleniyor
+        'bilim-kurgu': 10765,  // Sci-Fi & Fantasy
+        'romantik': 18,        // TV tarafinda romantik turu yok, Drama'ya esleniyor
+        'animasyon': 16,
+        'belgesel': 99,
+        'gerilim': 80          // TV tarafinda gerilim turu yok, Crime'a esleniyor
+    }
+};
+
+// Kullanicinin "yeni/guncel" istedigini anlamak icin basit anahtar kelime kontrolu
+function wantsRecentContent(userPrompt) {
+    if (!userPrompt) return false;
+    const keywords = ['yeni', 'güncel', 'guncel', 'son', 'yakında', 'yakinda',
+        'vizyon', '2025', '2026', 'trend', 'popüler', 'populer', 'çıkan', 'cikan'];
+    const lower = userPrompt.toLowerCase();
+    return keywords.some(k => lower.includes(k));
+}
+
+// TMDB'den tek bir listeyi cekip sadeleştirir
+async function fetchTMDBList(path, params = {}) {
+    try {
+        const query = new URLSearchParams({ language: 'tr-TR', ...params }).toString();
+        const response = await fetch(`${BACKEND_URL}/api/tmdb/${path}?${query}`);
+        if (!response.ok) return [];
+        const data = await response.json();
+        return Array.isArray(data.results) ? data.results : [];
+    } catch (error) {
+        console.warn('TMDB aday listesi alinamadi:', path, error.message);
+        return [];
+    }
+}
+
+// Prompt'un asiri uzamamasi icin havuz ust siniri
+const CANDIDATE_POOL_LIMIT = 80;
+
+// Aday havuzunu olusturur: trend + populer + kategoriye ozel + (istenirse) guncel
+async function fetchCandidatePool(userPrompt) {
+    const type = state.contentType === 'film' ? 'movie' : 'tv';
+    const genreMap = TMDB_GENRE_IDS[state.contentType === 'film' ? 'film' : 'dizi'];
+    const genreIds = state.selectedCategories
+        .map(c => genreMap[c])
+        .filter(Boolean);
+
+    // Ayni turu iki kez sorgulamamak icin tekillestir
+    const uniqueGenreIds = [...new Set(genreIds)];
+
+    const requests = [
+        fetchTMDBList(`trending/${type}/week`),
+        fetchTMDBList(`${type}/popular`)
+    ];
+
+    // Kategori secildiyse her tur icin ayri discover sorgusu
+    if (uniqueGenreIds.length > 0) {
+        requests.push(fetchTMDBList(`discover/${type}`, {
+            with_genres: uniqueGenreIds.join(','),
+            sort_by: 'popularity.desc',
+            'vote_count.gte': 100
+        }));
+    }
+
+    // Kullanici "yeni/guncel" istediyse son 1 yilin icerigini de havuza ekle
+    if (wantsRecentContent(userPrompt)) {
+        const today = new Date();
+        const oneYearAgo = new Date(today);
+        oneYearAgo.setFullYear(today.getFullYear() - 1);
+        const fromDate = oneYearAgo.toISOString().substring(0, 10);
+        const toDate = today.toISOString().substring(0, 10);
+
+        // Film ve dizi tarafinda tarih parametrelerinin adlari farkli
+        const dateParams = type === 'movie'
+            ? { 'primary_release_date.gte': fromDate, 'primary_release_date.lte': toDate }
+            : { 'first_air_date.gte': fromDate, 'first_air_date.lte': toDate };
+
+        requests.push(fetchTMDBList(`discover/${type}`, {
+            ...dateParams,
+            sort_by: 'popularity.desc',
+            'vote_count.gte': 20,
+            ...(uniqueGenreIds.length > 0 ? { with_genres: uniqueGenreIds.join(',') } : {})
+        }));
+    }
+
+    const lists = await Promise.all(requests);
+    const combined = lists.flat();
+
+    // Ayni film birden fazla listede olabilir; TMDB id'sine gore tekillestir
+    const seen = new Set();
+    const pool = [];
+    for (const item of combined) {
+        if (!item || !item.id || seen.has(item.id)) continue;
+        const title = item.title || item.name;
+        const date = item.release_date || item.first_air_date || '';
+        if (!title || !date) continue; // yili olmayan kayitlar ise yaramaz
+        seen.add(item.id);
+        pool.push({
+            title,
+            year: date.substring(0, 4),
+            rating: item.vote_average ? item.vote_average.toFixed(1) : null,
+            popularity: item.popularity || 0
+        });
+    }
+
+    // Prompt'u sisirmemek icin en populer olanlarla sinirla
+    return pool
+        .sort((a, b) => b.popularity - a.popularity)
+        .slice(0, CANDIDATE_POOL_LIMIT);
+}
+
+// Havuzu prompt'a girecek kisa metne cevirir
+function formatCandidatePool(pool) {
+    return pool
+        .map(m => `- ${m.title} (${m.year})${m.rating ? ` [puan: ${m.rating}]` : ''}`)
+        .join('\n');
+}
+
+function buildPrompt(userPrompt, candidatePool = []) {
     const contentType = state.contentType === 'film' ? 'film' : 'dizi';
     const categories = state.selectedCategories.length > 0
         ? state.selectedCategories.join(', ')
@@ -1125,9 +1268,17 @@ function buildPrompt(userPrompt) {
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.toLocaleString('tr-TR', { month: 'long' });
 
-    let prompt = `Sen bir ${contentType} öneri uzmanısın. 
+    let prompt = `Sen bir ${contentType} öneri uzmanısın. `;
 
-GÜNCEL TARİH: ${currentMonth} ${currentYear}
+    // Guncel tarih sadece havuz yokken verilir. Havuz varken bu satir modeli
+    // listede olmayan "bu yila ait" icerik uydurmaya tesvik ediyordu.
+    if (candidatePool.length === 0) {
+        prompt += `
+
+GÜNCEL TARİH: ${currentMonth} ${currentYear}`;
+    }
+
+    prompt += `
 
 Tercihler:
 - İçerik Türü: ${contentType}
@@ -1140,6 +1291,21 @@ Tercihler:
     if (userPrompt) {
         prompt += `\n\n⚠️ KULLANICININ İSTEĞİ (bunu diğer tercihlerden öncelikli tut): "${userPrompt}"
 Eğer kullanıcının isteği yukarıdaki seçimlerle çelişiyorsa, KULLANICININ İSTEĞİNE GÖRE hareket et!`;
+    }
+
+    // Aday havuzu varsa model sadece bu gercek listeden secim yapar.
+    // Havuz bos kalirsa (TMDB erisilemezse) eski davranisa dusulur.
+    if (candidatePool.length > 0) {
+        prompt += `
+
+AŞAĞIDAKİ LİSTE GÜNCEL VE GERÇEK ${contentType.toUpperCase()} VERİSİDİR:
+${formatCandidatePool(candidatePool)}
+
+KURALLAR:
+1. SADECE yukarıdaki listeden seçim yap. Listede olmayan bir ${contentType} ÖNERME.
+2. Yılları listede yazdığı gibi kullan, kendin yıl UYDURMA.
+3. Başlıkları listede yazdığı gibi, harfi harfine kopyala.
+4. Kullanıcının tercihlerine ve ruh haline en uygun olanları seç.`;
     }
 
     prompt += `
@@ -1241,10 +1407,24 @@ async function fetchTMDBData(recommendations) {
         try {
             // Search for the title on TMDB via backend
             const searchQuery = rec.title || rec.titleTr;
-            let searchUrl = `${BACKEND_URL}/api/tmdb/search/${searchType}?query=${encodeURIComponent(searchQuery)}`;
+            const baseSearchUrl = `${BACKEND_URL}/api/tmdb/search/${searchType}?query=${encodeURIComponent(searchQuery)}`;
 
+            // Yil biliniyorsa once yil filtresiyle ara: ayni isimli farkli yapimlarin
+            // (remake, ayni adli dizi vb.) yanlis eslesmesini onler
+            const yearParam = /^\d{4}$/.test(String(rec.year || ''))
+                ? (searchType === 'movie' ? `&year=${rec.year}` : `&first_air_date_year=${rec.year}`)
+                : '';
+
+            let searchUrl = baseSearchUrl + yearParam;
             let response = await fetch(searchUrl);
             let data = await response.json();
+
+            // Yil filtresi sonuc vermediyse yilsiz tekrar dene
+            if (yearParam && (!data.results || data.results.length === 0)) {
+                searchUrl = baseSearchUrl;
+                response = await fetch(searchUrl);
+                data = await response.json();
+            }
 
             // If no results, try with Turkish title
             if ((!data.results || data.results.length === 0) && rec.titleTr && rec.titleTr !== rec.title) {

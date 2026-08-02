@@ -2544,6 +2544,76 @@ textarea {
     color: var(--accent-primary);
 }
 
+/* Film / Dizi filtresi - trend sekmeleriyle ayni pill switch dili */
+.library-filter-wrap {
+    padding: var(--spacing-md) var(--spacing-lg) 0;
+    flex-shrink: 0;
+}
+
+.library-tabs {
+    display: flex;
+    gap: var(--spacing-xs);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px;
+    border-radius: var(--radius-full);
+    position: relative;
+}
+
+/* Kayan gradient gosterge: 3 secenek oldugu icin genislik 1/3 */
+.library-tab-indicator {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    height: calc(100% - 8px);
+    width: calc(33.333% - 5.33px);
+    background: var(--accent-gradient);
+    border-radius: var(--radius-full);
+    -webkit-transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+}
+
+.library-tabs[data-active="movie"] .library-tab-indicator {
+    -webkit-transform: translateX(calc(100% + 4px));
+    transform: translateX(calc(100% + 4px));
+}
+
+.library-tabs[data-active="tv"] .library-tab-indicator {
+    -webkit-transform: translateX(calc(200% + 8px));
+    transform: translateX(calc(200% + 8px));
+}
+
+.library-tab {
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    text-align: center;
+}
+
+.library-tab.active {
+    color: white;
+}
+
+.library-tab:hover:not(.active) {
+    color: var(--text-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .library-tab-indicator {
+        transition: none;
+    }
+}
+
 /* Kart listesi - panel icinde 2 sutun */
 .library-panel-body {
     flex: 1;

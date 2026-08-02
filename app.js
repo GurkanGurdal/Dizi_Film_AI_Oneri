@@ -210,9 +210,12 @@ const elements = {
     historySection: document.getElementById('historySection'),
     historyContainer: document.getElementById('historyContainer'),
     clearHistoryBtn: document.getElementById('clearHistory'),
-    librarySection: document.getElementById('librarySection'),
     libraryContainer: document.getElementById('libraryContainer'),
-    clearLibraryBtn: document.getElementById('clearLibrary')
+    clearLibraryBtn: document.getElementById('clearLibrary'),
+    libraryFab: document.getElementById('libraryFab'),
+    libraryPanel: document.getElementById('libraryPanel'),
+    libraryPanelOverlay: document.getElementById('libraryPanelOverlay'),
+    libraryPanelClose: document.getElementById('libraryPanelClose')
 };
 
 // ========================================
@@ -780,6 +783,17 @@ function setupEventListeners() {
 
     if (elements.clearLibraryBtn) {
         elements.clearLibraryBtn.addEventListener('click', clearLibrary);
+    }
+
+    // Kutuphane paneli: float buton, kapatma butonu ve arka plana tiklama
+    if (elements.libraryFab) {
+        elements.libraryFab.addEventListener('click', toggleLibraryPanel);
+    }
+    if (elements.libraryPanelClose) {
+        elements.libraryPanelClose.addEventListener('click', closeLibraryPanel);
+    }
+    if (elements.libraryPanelOverlay) {
+        elements.libraryPanelOverlay.addEventListener('click', closeLibraryPanel);
     }
 
     // Enter key to submit
@@ -1650,6 +1664,7 @@ function addToLibrary(movie) {
         // Kayit basarisiz (kota dolu / depolama kapali): eklemeyi geri al ki
         // kullanici kaydedilmemis bir yapimi kutuphanesinde saniyormis gibi olmasin
         state.library.shift();
+        renderLibrary(); // rozet ve liste geri alinan durumla eslessin
         alert('Kütüphaneye eklenemedi. Tarayıcı depolama alanı dolu olabilir; ' +
               'birkaç yapımı çıkarmayı deneyin.');
         return false;
@@ -1677,17 +1692,30 @@ function clearLibrary() {
 }
 
 function renderLibrary() {
-    const section = document.getElementById('librarySection');
     const container = document.getElementById('libraryContainer');
-    if (!section || !container) return;
+    updateLibraryCount();
+
+    if (!container) return;
 
     if (state.library.length === 0) {
-        section.classList.remove('visible');
-        container.innerHTML = '';
+        container.innerHTML = `
+            <div class="library-empty">
+                <span class="library-empty-icon">🎬</span>
+                Kütüphanen henüz boş.<br>
+                Beğendiğin yapımların detayına girip
+                "Kütüphaneye Ekle" ile buraya kaydedebilirsin.
+            </div>
+        `;
+        const info = document.getElementById('libraryPanelInfo');
+        if (info) info.textContent = '';
         return;
     }
 
-    section.classList.add('visible');
+    const info = document.getElementById('libraryPanelInfo');
+    if (info) {
+        info.textContent = `${state.library.length} yapım`;
+    }
+
     container.innerHTML = state.library.map((movie, index) => {
         const posterStyle = movie.poster
             ? `background-image: url('${movie.poster}')`
@@ -1718,6 +1746,62 @@ function renderLibrary() {
             </div>
         `;
     }).join('');
+}
+
+// Float butondaki sayi rozetini gunceller
+function updateLibraryCount() {
+    const badge = document.getElementById('libraryFabCount');
+    if (!badge) return;
+    const count = state.library.length;
+    badge.textContent = count > 99 ? '99+' : String(count);
+    badge.classList.toggle('empty', count === 0);
+}
+
+function openLibraryPanel() {
+    const panel = document.getElementById('libraryPanel');
+    const overlay = document.getElementById('libraryPanelOverlay');
+    const fab = document.getElementById('libraryFab');
+    if (!panel) return;
+
+    panel.classList.add('open');
+    panel.setAttribute('aria-hidden', 'false');
+    if (overlay) overlay.classList.add('active');
+    if (fab) {
+        fab.classList.add('panel-open');
+        fab.setAttribute('aria-expanded', 'true');
+    }
+    document.body.style.overflow = 'hidden';
+}
+
+function closeLibraryPanel() {
+    const panel = document.getElementById('libraryPanel');
+    const overlay = document.getElementById('libraryPanelOverlay');
+    const fab = document.getElementById('libraryFab');
+    if (!panel) return;
+
+    panel.classList.remove('open');
+    panel.setAttribute('aria-hidden', 'true');
+    if (overlay) overlay.classList.remove('active');
+    if (fab) {
+        fab.classList.remove('panel-open');
+        fab.setAttribute('aria-expanded', 'false');
+    }
+
+    // Film detay modali aciksa sayfa kaydirmasi kapali kalmali
+    const movieModal = document.getElementById('movieModal');
+    if (!movieModal || !movieModal.classList.contains('active')) {
+        document.body.style.overflow = '';
+    }
+}
+
+function toggleLibraryPanel() {
+    const panel = document.getElementById('libraryPanel');
+    if (!panel) return;
+    if (panel.classList.contains('open')) {
+        closeLibraryPanel();
+    } else {
+        openLibraryPanel();
+    }
 }
 
 // Kutuphanedeki karta tiklaninca detay modalini acar.
@@ -1986,7 +2070,12 @@ function openMovieModal(indexOrMovie) {
 function closeMovieModal() {
     const modal = document.getElementById('movieModal');
     modal.classList.remove('active');
-    document.body.style.overflow = '';
+
+    // Kutuphane paneli hala aciksa sayfa kaydirmasi kapali kalmali
+    const libraryPanel = document.getElementById('libraryPanel');
+    if (!libraryPanel || !libraryPanel.classList.contains('open')) {
+        document.body.style.overflow = '';
+    }
     
     // Reset cast list scroll position
     const castList = document.getElementById('modalCastList');
@@ -2263,10 +2352,14 @@ function setupModalListeners() {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             const trailerModal = document.getElementById('trailerModal');
+            const libraryPanel = document.getElementById('libraryPanel');
             if (trailerModal.classList.contains('active')) {
                 closeTrailerModal();
             } else if (modal.classList.contains('active')) {
                 closeMovieModal();
+            } else if (libraryPanel && libraryPanel.classList.contains('open')) {
+                // Panel en altta: ustundeki modallar kapandiktan sonra kapanir
+                closeLibraryPanel();
             }
         }
     });

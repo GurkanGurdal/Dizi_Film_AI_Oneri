@@ -2402,13 +2402,228 @@ textarea {
     display: block;
 }
 
-/* Film Kütüphanem */
-.library-section {
+/* ========================================
+   Film Kütüphanem - Float Buton + Yan Panel
+   ======================================== */
+
+/* Sol altta sabit duran acma butonu */
+.library-fab {
+    position: fixed;
+    left: var(--spacing-lg);
+    bottom: var(--spacing-lg);
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-gradient);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 4px 20px var(--accent-glow);
+    transition: var(--transition-fast);
+    z-index: 800;
+}
+
+.library-fab:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 28px var(--accent-glow);
+}
+
+.library-fab-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+/* Kayitli yapim sayisi rozeti */
+.library-fab-count {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    border: 2px solid var(--bg-primary);
+    border-radius: 11px;
+    color: var(--text-primary);
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+/* Kutuphane bosken rozet gizlenir */
+.library-fab-count.empty {
     display: none;
 }
 
-.library-section.visible {
+/* Panel acikken butonun ikonu degisir gibi kucuk vurgu */
+.library-fab.panel-open {
+    transform: scale(0.92);
+}
+
+/* Panelin arkasindaki karartma */
+.library-panel-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    visibility: hidden;
+    transition: var(--transition-normal);
+    z-index: 890;
+}
+
+.library-panel-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Soldan acilan panel */
+.library-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 420px;
+    max-width: 88vw;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.45);
+    transform: translateX(-100%);
+    transition: transform var(--transition-normal);
+    z-index: 900;
+}
+
+.library-panel.open {
+    transform: translateX(0);
+}
+
+.library-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.library-panel-title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.library-panel-close {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.library-panel-close:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+/* Kart listesi - panel icinde 2 sutun */
+.library-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-lg);
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
+    align-content: start;
+}
+
+/* Kutuphane bosken gosterilen mesaj */
+.library-empty {
+    grid-column: 1 / -1;
+    padding: var(--spacing-xl) var(--spacing-md);
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.library-empty-icon {
     display: block;
+    font-size: 2.5rem;
+    margin-bottom: var(--spacing-md);
+    opacity: 0.5;
+}
+
+.library-panel-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.library-panel-info {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+/* Panel icindeki kartlar biraz daha kompakt */
+.library-panel-body .poster-info {
+    padding: var(--spacing-sm);
+}
+
+.library-panel-body .poster-title {
+    font-size: 0.85rem;
+}
+
+.library-panel-body .poster-year {
+    font-size: 0.75rem;
+}
+
+/* Dar ekranlarda panel tam genislik, buton biraz kucuk */
+@media (max-width: 600px) {
+    .library-panel {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .library-fab {
+        width: 50px;
+        height: 50px;
+        left: var(--spacing-md);
+        bottom: var(--spacing-md);
+    }
+
+    .library-fab-icon {
+        font-size: 1.3rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .library-panel,
+    .library-fab {
+        transition: none;
+    }
 }
 
 /* Kütüphane kartındaki çıkarma butonu */

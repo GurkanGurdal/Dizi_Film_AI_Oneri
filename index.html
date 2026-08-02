@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260802-library3">
+    <link rel="stylesheet" href="styles.css?v=20260802-library4">
 </head>
 
 <body>
@@ -313,17 +313,6 @@
                 </div>
             </section>
 
-            <!-- Library -->
-            <section class="section library-section" id="librarySection">
-                <div class="history-header">
-                    <h2 class="section-title">🎞️ Film Kütüphanem</h2>
-                    <button id="clearLibrary" class="clear-history-btn">🗑️ Temizle</button>
-                </div>
-                <div class="poster-grid" id="libraryContainer">
-                    <!-- Library items will be inserted here -->
-                </div>
-            </section>
-
             <!-- History -->
             <section class="section history-section" id="historySection">
                 <div class="history-header">
@@ -341,6 +330,28 @@
             <p>Powered by <span class="gemini-badge">✨ GPT</span></p>
         </footer>
     </div>
+
+    <!-- Library Floating Button -->
+    <button class="library-fab" id="libraryFab" aria-label="Film kütüphanem" aria-expanded="false">
+        <span class="library-fab-icon">🎞️</span>
+        <span class="library-fab-count" id="libraryFabCount">0</span>
+    </button>
+
+    <!-- Library Side Panel -->
+    <div class="library-panel-overlay" id="libraryPanelOverlay"></div>
+    <aside class="library-panel" id="libraryPanel" aria-hidden="true" aria-label="Film kütüphanem">
+        <div class="library-panel-header">
+            <h2 class="library-panel-title">🎞️ Film Kütüphanem</h2>
+            <button class="library-panel-close" id="libraryPanelClose" aria-label="Kapat">&times;</button>
+        </div>
+        <div class="library-panel-body" id="libraryContainer">
+            <!-- Library items will be inserted here -->
+        </div>
+        <div class="library-panel-footer">
+            <span class="library-panel-info" id="libraryPanelInfo"></span>
+            <button id="clearLibrary" class="clear-history-btn">🗑️ Temizle</button>
+        </div>
+    </aside>
 
     <!-- Movie Detail Modal -->
     <div class="modal-overlay" id="movieModal">
@@ -460,7 +471,7 @@
     </div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="app.js?v=20260802-library3"></script>
+    <script src="app.js?v=20260802-library4"></script>
 </body>
 
 </html>

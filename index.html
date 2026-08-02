@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260802-library10">
+    <link rel="stylesheet" href="styles.css?v=20260802-library11">
 </head>
 
 <body>
@@ -120,13 +120,23 @@
                 <img src="assets/movie_ai.png" alt="" class="top-bar-logo">
                 <span class="top-bar-name">AI Film &amp; Dizi</span>
             </a>
-            <button class="library-fab" id="libraryFab" aria-label="Film kütüphanem" aria-expanded="false">
+            <!-- Mobilde bar icinde durur; masaustunde gizli -->
+            <button class="library-btn library-btn-bar" aria-label="Film kütüphanem" aria-expanded="false">
                 <span class="library-fab-icon">🎞️</span>
                 <span class="library-fab-text">Kütüphanem</span>
-                <span class="library-fab-count" id="libraryFabCount">0</span>
+                <span class="library-fab-count">0</span>
             </button>
         </div>
     </div>
+
+    <!-- Masaustunde sol altta yuzer; mobilde gizli.
+         Bar position:fixed oldugu icin buton bar icinde birakilirsa
+         sol alta konumlanamaz, bu yuzden ayri bir oge. -->
+    <button class="library-btn library-btn-float" aria-label="Film kütüphanem" aria-expanded="false">
+        <span class="library-fab-icon">🎞️</span>
+        <span class="library-fab-text">Kütüphanem</span>
+        <span class="library-fab-count">0</span>
+    </button>
 
     <!-- Main Container -->
     <div class="container">
@@ -488,7 +498,7 @@
     </div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="app.js?v=20260802-library10"></script>
+    <script src="app.js?v=20260802-library11"></script>
 </body>
 
 </html>

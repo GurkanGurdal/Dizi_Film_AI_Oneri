@@ -213,7 +213,8 @@ const elements = {
     clearHistoryBtn: document.getElementById('clearHistory'),
     libraryContainer: document.getElementById('libraryContainer'),
     clearLibraryBtn: document.getElementById('clearLibrary'),
-    libraryFab: document.getElementById('libraryFab'),
+    // Iki buton var: masaustunde yuzen, mobilde bar icindeki
+    libraryButtons: document.querySelectorAll('.library-btn'),
     libraryPanel: document.getElementById('libraryPanel'),
     libraryPanelOverlay: document.getElementById('libraryPanelOverlay'),
     libraryPanelClose: document.getElementById('libraryPanelClose')
@@ -788,9 +789,9 @@ function setupEventListeners() {
     }
 
     // Kutuphane paneli: float buton, kapatma butonu ve arka plana tiklama
-    if (elements.libraryFab) {
-        elements.libraryFab.addEventListener('click', toggleLibraryPanel);
-    }
+    elements.libraryButtons.forEach(btn => {
+        btn.addEventListener('click', toggleLibraryPanel);
+    });
     if (elements.libraryPanelClose) {
         elements.libraryPanelClose.addEventListener('click', closeLibraryPanel);
     }
@@ -1832,44 +1833,45 @@ function setLibraryFilter(filter) {
     renderLibrary();
 }
 
-// Float butondaki sayi rozetini gunceller
+// Kutuphane butonlarindaki sayi rozetlerini gunceller.
+// Iki buton var (masaustu yuzen + mobil bar); ikisi de guncellenir.
 function updateLibraryCount() {
-    const badge = document.getElementById('libraryFabCount');
-    if (!badge) return;
     const count = state.library.length;
-    badge.textContent = count > 99 ? '99+' : String(count);
-    badge.classList.toggle('empty', count === 0);
+    document.querySelectorAll('.library-fab-count').forEach(badge => {
+        badge.textContent = count > 99 ? '99+' : String(count);
+        badge.classList.toggle('empty', count === 0);
+    });
+}
+
+// Panel durumunu her iki butona da yansitir
+function setLibraryButtonsState(open) {
+    document.querySelectorAll('.library-btn').forEach(btn => {
+        btn.classList.toggle('panel-open', open);
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
 }
 
 function openLibraryPanel() {
     const panel = document.getElementById('libraryPanel');
     const overlay = document.getElementById('libraryPanelOverlay');
-    const fab = document.getElementById('libraryFab');
     if (!panel) return;
 
     panel.classList.add('open');
     panel.setAttribute('aria-hidden', 'false');
     if (overlay) overlay.classList.add('active');
-    if (fab) {
-        fab.classList.add('panel-open');
-        fab.setAttribute('aria-expanded', 'true');
-    }
+    setLibraryButtonsState(true);
     document.body.style.overflow = 'hidden';
 }
 
 function closeLibraryPanel() {
     const panel = document.getElementById('libraryPanel');
     const overlay = document.getElementById('libraryPanelOverlay');
-    const fab = document.getElementById('libraryFab');
     if (!panel) return;
 
     panel.classList.remove('open');
     panel.setAttribute('aria-hidden', 'true');
     if (overlay) overlay.classList.remove('active');
-    if (fab) {
-        fab.classList.remove('panel-open');
-        fab.setAttribute('aria-expanded', 'false');
-    }
+    setLibraryButtonsState(false);
 
     // Film detay modali aciksa sayfa kaydirmasi kapali kalmali
     const movieModal = document.getElementById('movieModal');

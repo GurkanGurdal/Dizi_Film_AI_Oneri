@@ -2498,42 +2498,64 @@ textarea {
     padding-top: calc(60px + var(--spacing-lg));
 }
 
-/* Masaustunde buton sol altta yuzer: bar akistan cikarilir.
-   Panel de soldan acildigi icin buton ve panel ayni tarafta. */
-.library-fab {
-    position: fixed;
-    left: var(--spacing-lg);
-    bottom: var(--spacing-lg);
+/* Kutuphane butonu iki ayri oge olarak var:
+   .library-btn-float  -> masaustunde sol altta yuzer
+   .library-btn-bar    -> mobilde bar icinde durur
+   Bar position:fixed oldugu icin tek oge her iki konumu karsilayamiyor. */
+.library-btn {
     display: inline-flex;
     align-items: center;
     gap: var(--spacing-sm);
-    padding: 10px var(--spacing-lg);
-    background: rgba(18, 18, 26, 0.82);
-    border: 1px solid var(--bg-glass-border);
     border-radius: var(--radius-full);
     color: var(--text-primary);
     font-size: 0.85rem;
     font-weight: 500;
     font-family: inherit;
     cursor: pointer;
-    backdrop-filter: blur(16px) saturate(160%);
-    -webkit-backdrop-filter: blur(16px) saturate(160%);
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
     /* Bar saydamken pointer-events:none; buton her durumda tiklanabilir */
     pointer-events: auto;
     transition: var(--transition-fast);
     flex-shrink: 0;
+}
+
+/* Masaustu: sol altta yuzen buton. Panel de soldan acildigi icin
+   buton ve panel ayni tarafta. */
+.library-btn-float {
+    position: fixed;
+    left: var(--spacing-lg);
+    bottom: var(--spacing-lg);
+    padding: 10px var(--spacing-lg);
+    background: rgba(18, 18, 26, 0.82);
+    border: 1px solid var(--bg-glass-border);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
     z-index: 800;
 }
 
-.library-fab:hover {
+.library-btn-float:hover {
     border-color: var(--border-active);
     transform: translateY(-2px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 0 20px var(--accent-glow);
 }
 
+/* Bar icindeki buton masaustunde gizli */
+.library-btn-bar {
+    display: none;
+    padding: 7px var(--spacing-md);
+    background: var(--bg-glass);
+    border: 1px solid var(--bg-glass-border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.library-btn-bar:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-active);
+}
+
 /* Panel aciksa buton vurgulu durur */
-.library-fab.panel-open {
+.library-btn.panel-open {
     background: rgba(99, 102, 241, 0.18);
     border-color: var(--border-active);
     color: var(--accent-primary);
@@ -2572,19 +2594,13 @@ textarea {
         justify-content: space-between;
     }
 
-    /* Buton yuzen konumdan cikip bar akisina girer */
-    .library-fab {
-        position: static;
-        padding: 7px var(--spacing-md);
-        background: var(--bg-glass);
-        box-shadow: none;
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+    /* Yuzen buton gizlenir, yerini bar icindeki alir */
+    .library-btn-float {
+        display: none;
     }
 
-    .library-fab:hover {
-        transform: none;
-        box-shadow: none;
+    .library-btn-bar {
+        display: inline-flex;
     }
 }
 
@@ -2810,14 +2826,14 @@ textarea {
         display: none;
     }
 
-    .library-fab {
+    .library-btn {
         padding: var(--spacing-xs) var(--spacing-sm);
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
     .library-panel,
-    .library-fab {
+    .library-btn {
         transition: none;
     }
 }

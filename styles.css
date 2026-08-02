@@ -2754,15 +2754,23 @@ textarea {
     }
 }
 
-/* Kart listesi - panel icinde 2 sutun */
+/* Kart listesi - panel icinde 2 sutun.
+   min-height:0 olmadan flex ogesi icerigi kadar buyuyup overflow-y'yi
+   etkisiz birakiyor; kartlar sigmak icin kuculuyordu. */
 .library-panel-body {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: var(--spacing-lg);
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: var(--spacing-md);
     align-content: start;
+}
+
+/* Satirlar icerik kadar yer kaplasin, kalan alana yayilip kuculmesin */
+.library-panel-body .poster-card {
+    align-self: start;
 }
 
 /* Kutuphane bosken gosterilen mesaj */
@@ -2800,6 +2808,20 @@ textarea {
 /* Panel icindeki kartlar biraz daha kompakt */
 .library-panel-body .poster-info {
     padding: var(--spacing-sm);
+}
+
+/* Panel kartlari dar oldugu icin "Detay icin tikla" satira sigmiyor,
+   once iki kelimeye sonra alt alta kayarak bozuk gorunuyordu.
+   Panel icinde metni tek satirda ve daha kucuk tutuyoruz. */
+.library-panel-body .detail-hint {
+    font-size: 0.72rem;
+    letter-spacing: 0;
+    white-space: nowrap;
+    padding: 0 var(--spacing-xs);
+}
+
+.library-panel-body .poster-overlay {
+    padding-bottom: var(--spacing-md);
 }
 
 .library-panel-body .poster-title {
@@ -3213,6 +3235,8 @@ textarea {
     display: flex;
     align-items: center;
     gap: 6px;
+    /* Dar kartlarda kelimeler alt alta kayip bozuk gorunuyordu */
+    white-space: nowrap;
 }
 
 .detail-hint::before {

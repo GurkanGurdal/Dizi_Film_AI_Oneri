@@ -2659,6 +2659,9 @@ textarea {
     font-size: 1.15rem;
     font-weight: 700;
     color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
 }
 
 .library-panel-close {
@@ -5577,4 +5580,107 @@ textarea {
     .quality-label {
         display: none;
     }
+}
+/* ========================================
+   Lucide İkonları
+   ======================================== */
+/* Lucide <i data-lucide> ogelerini SVG'ye cevirir; SVG'ler
+   stroke="currentColor" tasidigi icin bulundugu yerin rengini devralir. */
+[data-lucide],
+.lucide {
+    width: 1em;
+    height: 1em;
+    flex-shrink: 0;
+    vertical-align: -0.125em;
+}
+
+/* Baslik yanindaki ikonlar metinden biraz buyuk ve accent renkli */
+.title-icon {
+    width: 1.1em;
+    height: 1.1em;
+    color: var(--accent-primary);
+}
+
+/* Gradient metinli baslikta ikon seffaf kalirdi; rengi geri veriyoruz */
+.trending-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.trending-title .title-icon {
+    -webkit-text-fill-color: initial;
+    color: var(--accent-secondary);
+}
+
+/* Puan rozetlerindeki yildiz dolu gorunsun */
+.rating-badge .lucide,
+.hero-rating .lucide,
+.trend-rating .lucide {
+    width: 0.9em;
+    height: 0.9em;
+    fill: #fbbf24;
+    stroke: #fbbf24;
+}
+
+.rating-badge,
+.hero-rating,
+.trend-rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Afissiz / fotografsiz yer tutucular */
+.no-poster .lucide,
+.no-photo .lucide {
+    width: 2.5rem;
+    height: 2.5rem;
+    opacity: 0.35;
+}
+
+.no-poster {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+/* Kutuphane bos durumu */
+.library-empty-icon .lucide {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+/* Buton ve etiket ikonlari */
+.clear-history-btn,
+.history-tag,
+.reason-label,
+.gemini-badge,
+.modal-rating,
+.actor-birthday,
+.actor-birthplace {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Kutuphaneden cikarma butonundaki X */
+.library-remove-btn .lucide {
+    width: 0.85rem;
+    height: 0.85rem;
+}
+
+/* Hero / karusel yon oklari */
+.hero-nav-btn .lucide,
+.carousel-btn .lucide {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+/* Hata mesaji */
+.error-message p {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }

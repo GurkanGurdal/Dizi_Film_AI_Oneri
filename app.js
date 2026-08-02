@@ -62,7 +62,7 @@ function hideColdStart() {
     const overlay = document.getElementById('coldStartOverlay');
     if (overlay) {
         const timeText = document.getElementById('coldStartTime');
-        if (timeText) timeText.textContent = '✅ Hazır!';
+        if (timeText) timeText.textContent = 'Hazır!';
         
         // Timer ve fact interval'ı hemen durdur
         stopColdStartTimer();
@@ -223,12 +223,26 @@ const elements = {
 // ========================================
 // Initialize
 // ========================================
+// Lucide ikonlarini SVG'ye cevirir. Dinamik olarak eklenen HTML'deki
+// <i data-lucide="..."> ogeleri kendiliginden donusmez; icerik her
+// degistiginde bu cagrilmali.
+function renderIcons(root) {
+    if (typeof lucide === 'undefined' || !lucide.createIcons) return;
+    try {
+        lucide.createIcons(root ? { nameAttr: 'data-lucide', root } : undefined);
+    } catch (e) {
+        // Ikonlar yuklenemezse arayuz calismaya devam etsin
+        console.warn('Ikonlar olusturulamadi:', e.message);
+    }
+}
+
 async function init() {
     loadHistory();
     loadLibrary();
     setupEventListeners();
     setupTopBarScroll();
     setupTrendingTabs();
+    renderIcons();
     
     // Server health check (cold start handling)
     await checkServerHealth();
@@ -312,12 +326,12 @@ async function loadTrendingContent(type) {
                             <div class="hero-gradient"></div>
                             <div class="hero-content">
                                 <div class="hero-rank-badge">
-                                    <span>🏆</span>
+                                    <span><i data-lucide="trophy"></i></span>
                                     <span>#${index + 1} Bu Hafta</span>
                                 </div>
                                 <h2 class="hero-title">${title}</h2>
                                 <div class="hero-meta">
-                                    <span class="hero-rating">⭐ ${rating}</span>
+                                    <span class="hero-rating"><i data-lucide="star"></i>${rating}</span>
                                     <span>${year}</span>
                                     <span>${type === 'movie' ? 'Film' : 'Dizi'}</span>
                                 </div>
@@ -363,7 +377,7 @@ async function loadTrendingContent(type) {
                         <div class="trend-poster-wrapper">
                             <img class="trend-poster" src="${poster}" alt="${title}">
                             <span class="trend-rank">${index + 1}</span>
-                            <span class="trend-rating">⭐ ${rating}</span>
+                            <span class="trend-rating"><i data-lucide="star"></i>${rating}</span>
                         </div>
                         <div class="trend-info">
                             <div class="trend-title" title="${title}">${title}</div>
@@ -382,6 +396,10 @@ async function loadTrendingContent(type) {
                 });
             });
         }
+
+        // Trend kartlari ve hero yeni cizildi; ikonlari donustur
+        renderIcons(track);
+        if (heroSlides) renderIcons(heroSlides);
     } catch (error) {
         console.error('Trending load error:', error);
         track.innerHTML = '<p style="color: var(--text-muted); padding: 2rem;">Trend içerikler yüklenemedi.</p>';
@@ -1552,13 +1570,13 @@ function displayPosterCards(recommendations) {
             : `background: linear-gradient(135deg, #1a1a2e, #16213e)`;
 
         const ratingBadge = rec.rating
-            ? `<div class="rating-badge">⭐ ${rec.rating}</div>`
+            ? `<div class="rating-badge"><i data-lucide="star"></i>${rec.rating}</div>`
             : '';
 
         return `
             <div class="poster-card" onclick="openMovieModal(${index})">
                 <div class="poster-image" style="${posterStyle}">
-                    ${!rec.poster ? '<div class="no-poster">🎬</div>' : ''}
+                    ${!rec.poster ? '<div class="no-poster"><i data-lucide="clapperboard"></i></div>' : ''}
                     ${ratingBadge}
                 </div>
                 <div class="poster-info">
@@ -1579,6 +1597,7 @@ function displayPosterCards(recommendations) {
         </div>
     `;
 
+    renderIcons(elements.resultsContainer);
     elements.resultsSection.classList.add('visible');
     elements.resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -1586,7 +1605,7 @@ function displayPosterCards(recommendations) {
 function displayError(message) {
     elements.resultsContainer.innerHTML = `
         <div class="error-message">
-            <p>⚠️ Bir hata oluştu: ${message}</p>
+            <p><i data-lucide="alert-triangle"></i>Bir hata oluştu: ${message}</p>
             <p>Lütfen tekrar deneyin.</p>
         </div>
     `;
@@ -1718,13 +1737,14 @@ function renderLibrary() {
     if (state.library.length === 0) {
         container.innerHTML = `
             <div class="library-empty">
-                <span class="library-empty-icon">🎬</span>
+                <span class="library-empty-icon"><i data-lucide="library"></i></span>
                 Kütüphanen henüz boş.<br>
                 Beğendiğin yapımların detayına girip
                 "Kütüphaneye Ekle" ile buraya kaydedebilirsin.
             </div>
         `;
         if (info) info.textContent = '';
+        renderIcons(container);
         return;
     }
 
@@ -1733,11 +1753,12 @@ function renderLibrary() {
         const label = filter === 'movie' ? 'film' : 'dizi';
         container.innerHTML = `
             <div class="library-empty">
-                <span class="library-empty-icon">${filter === 'movie' ? '🎬' : '📺'}</span>
+                <span class="library-empty-icon"><i data-lucide="${filter === 'movie' ? 'clapperboard' : 'tv'}"></i></span>
                 Kütüphanende kayıtlı ${label} yok.
             </div>
         `;
         if (info) info.textContent = `0 / ${state.library.length} yapım`;
+        renderIcons(container);
         return;
     }
 
@@ -1753,7 +1774,7 @@ function renderLibrary() {
             : `background: linear-gradient(135deg, #1a1a2e, #16213e)`;
 
         const ratingBadge = movie.rating
-            ? `<div class="rating-badge">⭐ ${movie.rating}</div>`
+            ? `<div class="rating-badge"><i data-lucide="star"></i>${movie.rating}</div>`
             : '';
 
         const key = getLibraryKey(movie);
@@ -1764,11 +1785,11 @@ function renderLibrary() {
         return `
             <div class="poster-card" onclick="openLibraryMovie('${safeKey}')">
                 <div class="poster-image" style="${posterStyle}">
-                    ${!movie.poster ? '<div class="no-poster">🎬</div>' : ''}
+                    ${!movie.poster ? '<div class="no-poster"><i data-lucide="clapperboard"></i></div>' : ''}
                     ${ratingBadge}
                     <button class="library-remove-btn"
                             onclick="event.stopPropagation(); removeFromLibrary('${safeKey}')"
-                            title="Kütüphaneden çıkar">✕</button>
+                            title="Kütüphaneden çıkar"><i data-lucide="x"></i></button>
                 </div>
                 <div class="poster-info">
                     <h3 class="poster-title">${movie.titleTr || movie.title}</h3>
@@ -1780,6 +1801,8 @@ function renderLibrary() {
             </div>
         `;
     }).join('');
+
+    renderIcons(container);
 }
 
 // Sayfa kaydirilinca ust bar cam efektiyle belirir; tepedeyken saydam
@@ -1914,7 +1937,9 @@ function updateLibraryButton(movie, animate = false) {
 
     const inLibrary = isInLibrary(movie);
     btn.classList.toggle('in-library', inLibrary);
-    btn.querySelector('.library-icon').textContent = inLibrary ? '✓' : '➕';
+    btn.querySelector('.library-icon').innerHTML =
+        `<i data-lucide="${inLibrary ? 'check' : 'plus'}"></i>`;
+    renderIcons(btn);
     btn.querySelector('.library-text').textContent = inLibrary
         ? 'Kütüphanemde'
         : 'Kütüphaneye Ekle';
@@ -1987,13 +2012,15 @@ function renderHistory() {
         <div class="history-item" data-id="${item.id}">
             <div class="history-prompt">${item.prompt}</div>
             <div class="history-meta">
-                <span class="history-tag">${item.contentType === 'film' ? '🎞️ Film' : '📺 Dizi'}</span>
+                <span class="history-tag"><i data-lucide="${item.contentType === 'film' ? 'clapperboard' : 'tv'}"></i>${item.contentType === 'film' ? 'Film' : 'Dizi'}</span>
                 ${item.categories.slice(0, 2).map(cat => `<span class="history-tag">${cat}</span>`).join('')}
                 ${item.categories.length > 2 ? `<span class="history-tag">+${item.categories.length - 2}</span>` : ''}
                 <span class="history-date">${item.date}</span>
             </div>
         </div>
     `).join('');
+
+    renderIcons(elements.historyContainer);
 
     // Add click listeners to history items
     document.querySelectorAll('.history-item').forEach(item => {
@@ -2060,13 +2087,14 @@ function openMovieModal(indexOrMovie) {
         modalPoster.style.backgroundImage = `url('${movie.poster}')`;
     } else {
         modalPoster.style.backgroundImage = 'none';
-        modalPoster.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:4rem;">🎬</div>';
+        modalPoster.innerHTML = '<div class="no-poster"><i data-lucide="clapperboard"></i></div>';
     }
 
     // Set text content
     modalTitle.textContent = movie.titleTr || movie.title;
     modalYear.textContent = movie.year || 'N/A';
-    modalRating.textContent = movie.rating ? `⭐ ${movie.rating}` : '';
+    modalRating.innerHTML = movie.rating
+        ? `<i data-lucide="star"></i>${movie.rating}` : '';
     modalDescription.textContent = movie.overview || 'Açıklama bulunamadı.';
 
     // Açıklama çevirisi gerekiyorsa async olarak yap
@@ -2109,7 +2137,7 @@ function openMovieModal(indexOrMovie) {
         modalCastList.innerHTML = movie.cast.map(actor => `
             <div class="cast-item" onclick="openActorModal(${actor.id})" style="cursor: pointer;">
                 <div class="cast-photo" style="background-image: url('${actor.profile_path ? `https://image.tmdb.org/t/p/w185${actor.profile_path}` : ''}')">
-                    ${!actor.profile_path ? '<span class="no-photo">👤</span>' : ''}
+                    ${!actor.profile_path ? '<span class="no-photo"><i data-lucide="user"></i></span>' : ''}
                 </div>
                 <div class="cast-info">
                     <span class="cast-name">${actor.name}</span>
@@ -2146,6 +2174,9 @@ function openMovieModal(indexOrMovie) {
 
     // Set Library button (ekle / kutuphanemde durumu)
     updateLibraryButton(movie);
+
+    // Modal icerigi tamamen yenilendigi icin ikonlari yeniden ciz
+    renderIcons(modal);
 
     // Show modal
     modal.classList.add('active');
@@ -2601,7 +2632,7 @@ async function openActorModal(actorId) {
             actorPhoto.innerHTML = '';
         } else {
             actorPhoto.style.backgroundImage = 'none';
-            actorPhoto.innerHTML = '<span class="no-photo">👤</span>';
+            actorPhoto.innerHTML = '<span class="no-photo"><i data-lucide="user"></i></span>';
         }
 
         // Set backdrop on modal-body (covers entire scrollable content)
@@ -2619,8 +2650,8 @@ async function openActorModal(actorId) {
         const actorBirthday = document.getElementById('actorBirthday');
         if (actorData.birthday) {
             const age = calculateAge(actorData.birthday, actorData.deathday);
-            const deathInfo = actorData.deathday ? ` - ✝️ ${formatDate(actorData.deathday)}` : '';
-            actorBirthday.innerHTML = `🎂 ${formatDate(actorData.birthday)} (${age} yaş)${deathInfo}`;
+            const deathInfo = actorData.deathday ? ` - ${formatDate(actorData.deathday)}` : '';
+            actorBirthday.innerHTML = `<i data-lucide="cake"></i>${formatDate(actorData.birthday)} (${age} yaş)${deathInfo}`;
         } else {
             actorBirthday.textContent = '';
         }
@@ -2628,7 +2659,7 @@ async function openActorModal(actorId) {
         // Set birthplace
         const actorBirthplace = document.getElementById('actorBirthplace');
         if (actorData.place_of_birth) {
-            actorBirthplace.innerHTML = `📍 ${actorData.place_of_birth}`;
+            actorBirthplace.innerHTML = `<i data-lucide="map-pin"></i>${actorData.place_of_birth}`;
         } else {
             actorBirthplace.textContent = '';
         }

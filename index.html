@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260802-library14">
+    <link rel="stylesheet" href="styles.css?v=20260802-icons1">
 </head>
 
 <body>
@@ -56,7 +56,7 @@
             
             <!-- Status Text -->
             <div class="cold-start-text">
-                <h2 class="cold-start-title">🎬 Server Başlatılıyor</h2>
+                <h2 class="cold-start-title"><i data-lucide="server" class="title-icon"></i>Server Başlatılıyor</h2>
                 <p class="cold-start-subtitle">Cold Start Modu</p>
                 <p class="cold-start-info">Server uyku modundan uyanıyor...<br>Bu işlem 30 saniye - 2 dakika sürebilir.</p>
             </div>
@@ -68,7 +68,7 @@
             
             <!-- Fun Facts -->
             <div class="cold-start-facts">
-                <p class="fact-text" id="coldStartFact">💡 Biliyor muydunuz? Film makaraları saniyede 24 kare gösterir!</p>
+                <p class="fact-text" id="coldStartFact">Biliyor muydunuz? Film makaraları saniyede 24 kare gösterir!</p>
             </div>
         </div>
     </div>
@@ -122,7 +122,7 @@
             </a>
             <!-- Mobilde bar icinde durur; masaustunde gizli -->
             <button class="library-btn library-btn-bar" aria-label="Kütüphanem" aria-expanded="false">
-                <span class="library-fab-icon">🎞️</span>
+                <span class="library-fab-icon"><i data-lucide="library"></i></span>
                 <span class="library-fab-text">Kütüphanem</span>
                 <span class="library-fab-count">0</span>
             </button>
@@ -133,7 +133,7 @@
          Bar position:fixed oldugu icin buton bar icinde birakilirsa
          sol alta konumlanamaz, bu yuzden ayri bir oge. -->
     <button class="library-btn library-btn-float" aria-label="Kütüphanem" aria-expanded="false">
-        <span class="library-fab-icon">🎞️</span>
+        <span class="library-fab-icon"><i data-lucide="library"></i></span>
         <span class="library-fab-text">Kütüphanem</span>
         <span class="library-fab-count">0</span>
     </button>
@@ -179,12 +179,12 @@
                     <div class="hero-indicators" id="heroIndicators"></div>
                 </div>
                 <div class="hero-nav">
-                    <button class="hero-nav-btn hero-prev">❮</button>
-                    <button class="hero-nav-btn hero-next">❯</button>
+                    <button class="hero-nav-btn hero-prev" aria-label="Önceki"><i data-lucide="chevron-left"></i></button>
+                    <button class="hero-nav-btn hero-next" aria-label="Sonraki"><i data-lucide="chevron-right"></i></button>
                 </div>
             </div>
             <div class="trending-header">
-                <h2 class="trending-title">🔥 Bu Hafta Trend</h2>
+                <h2 class="trending-title"><i data-lucide="flame" class="title-icon"></i>Bu Hafta Trend</h2>
                 <div class="trending-tabs">
                     <div class="trend-tab-indicator"></div>
                     <button class="trend-tab active" data-type="movie">Filmler</button>
@@ -192,11 +192,11 @@
                 </div>
             </div>
             <div class="trending-carousel">
-                <button class="carousel-btn carousel-prev">❮</button>
+                <button class="carousel-btn carousel-prev" aria-label="Önceki"><i data-lucide="chevron-left"></i></button>
                 <div class="trending-track" id="trendingTrack">
                     <!-- Dinamik olarak doldurulacak -->
                 </div>
-                <button class="carousel-btn carousel-next">❯</button>
+                <button class="carousel-btn carousel-next" aria-label="Sonraki"><i data-lucide="chevron-right"></i></button>
             </div>
         </section>
 
@@ -204,7 +204,7 @@
         <main class="main-content">
             <!-- Content Type Toggle -->
             <section class="section content-type-section">
-                <h2 class="section-title">📺 Ne İzlemek İstiyorsun?</h2>
+                <h2 class="section-title"><i data-lucide="monitor-play" class="title-icon"></i>Ne İzlemek İstiyorsun?</h2>
                 <div class="split-toggle" id="splitToggle">
                     <!-- Film Side -->
                     <div class="split-side split-film active" data-type="film">
@@ -225,7 +225,7 @@
 
             <!-- Categories -->
             <section class="section categories-section">
-                <h2 class="section-title">🎭 Kategoriler</h2>
+                <h2 class="section-title"><i data-lucide="layout-grid" class="title-icon"></i>Kategoriler</h2>
                 <p class="section-subtitle">Birden fazla seçebilirsin</p>
                 <div class="categories-grid">
                     <button class="category-card" data-category="aksiyon">
@@ -269,7 +269,7 @@
 
             <!-- Mood Selection -->
             <section class="section mood-section">
-                <h2 class="section-title">😊 Şu An Nasıl Hissediyorsun?</h2>
+                <h2 class="section-title"><i data-lucide="smile" class="title-icon"></i>Şu An Nasıl Hissediyorsun?</h2>
                 <div class="mood-grid">
                     <button class="mood-btn" data-mood="mutlu">
                         <span class="mood-emoji">😄</span>
@@ -332,7 +332,7 @@
 
             <!-- Results -->
             <section class="section results-section" id="resultsSection">
-                <h2 class="section-title">🎬 Öneriler</h2>
+                <h2 class="section-title"><i data-lucide="clapperboard" class="title-icon"></i>Öneriler</h2>
                 <div class="results-container" id="resultsContainer">
                     <!-- Results will be inserted here -->
                 </div>
@@ -341,8 +341,8 @@
             <!-- History -->
             <section class="section history-section" id="historySection">
                 <div class="history-header">
-                    <h2 class="section-title">📜 Geçmiş Öneriler</h2>
-                    <button id="clearHistory" class="clear-history-btn">🗑️ Temizle</button>
+                    <h2 class="section-title"><i data-lucide="history" class="title-icon"></i>Geçmiş Öneriler</h2>
+                    <button id="clearHistory" class="clear-history-btn"><i data-lucide="trash-2"></i>Temizle</button>
                 </div>
                 <div class="history-container" id="historyContainer">
                     <!-- History items will be inserted here -->
@@ -352,7 +352,7 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>Powered by <span class="gemini-badge">✨ GPT</span></p>
+            <p>Powered by <span class="gemini-badge"><i data-lucide="sparkles"></i>GPT</span></p>
         </footer>
     </div>
 
@@ -360,7 +360,7 @@
     <div class="library-panel-overlay" id="libraryPanelOverlay"></div>
     <aside class="library-panel" id="libraryPanel" aria-hidden="true" aria-label="Kütüphanem">
         <div class="library-panel-header">
-            <h2 class="library-panel-title">🎞️ Kütüphanem</h2>
+            <h2 class="library-panel-title"><i data-lucide="library" class="title-icon"></i>Kütüphanem</h2>
             <button class="library-panel-close" id="libraryPanelClose" aria-label="Kapat">&times;</button>
         </div>
         <div class="library-filter-wrap">
@@ -376,7 +376,7 @@
         </div>
         <div class="library-panel-footer">
             <span class="library-panel-info" id="libraryPanelInfo"></span>
-            <button id="clearLibrary" class="clear-history-btn">🗑️ Temizle</button>
+            <button id="clearLibrary" class="clear-history-btn"><i data-lucide="trash-2"></i>Temizle</button>
         </div>
     </aside>
 
@@ -393,11 +393,11 @@
                         <div class="modal-meta">
                             <span class="modal-content-type" id="modalContentType">Film</span>
                             <span class="modal-year" id="modalYear">2023</span>
-                            <span class="modal-rating" id="modalRating">⭐ 8.5</span>
+                            <span class="modal-rating" id="modalRating"></span>
                         </div>
                         <p class="modal-description" id="modalDescription">Film açıklaması burada görünecek...</p>
                         <div class="modal-reason-box" id="modalReasonBox">
-                            <span class="reason-label">💡 Neden Önerildi:</span>
+                            <span class="reason-label"><i data-lucide="lightbulb"></i>Neden Önerildi:</span>
                             <p class="modal-reason" id="modalReason">Öneri sebebi...</p>
                         </div>
                         <div class="modal-cast-section" id="modalCastSection">
@@ -415,13 +415,13 @@
                                 <img src="assets/play.png" alt="Play" class="watch-icon"><span class="trailer-text">Fragman</span>
                             </button>
                             <button class="modal-library-btn" id="modalLibraryBtn">
-                                <span class="library-icon">➕</span><span class="library-text">Kütüphaneye Ekle</span>
+                                <span class="library-icon"><i data-lucide="plus"></i></span><span class="library-text">Kütüphaneye Ekle</span>
                             </button>
                             <a href="#" class="modal-search-link" id="modalWatchBtn" target="_blank">
                                 <img src="assets/global-search.png" alt="Search" class="search-icon"> Ara
                             </a>
                             <a href="#" class="modal-tmdb-link" id="modalTmdbLink" target="_blank">
-                                🔗 TMDB'de Görüntüle
+                                <i data-lucide="external-link"></i>TMDB'de Görüntüle
                             </a>
                         </div>
                     </div>
@@ -455,7 +455,7 @@
                         </div>
                         <div class="actor-actions">
                             <a href="#" class="modal-tmdb-link" id="actorTmdbLink" target="_blank">
-                                🔗 TMDB'de Görüntüle
+                                <i data-lucide="external-link"></i>TMDB'de Görüntüle
                             </a>
                         </div>
                     </div>
@@ -497,8 +497,10 @@
         </div>
     </div>
 
+    <!-- Lucide: ince cizgili ikon paketi (data-lucide ile SVG'ye donusur) -->
+    <script src="https://unpkg.com/lucide@1.28.0/dist/umd/lucide.min.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="app.js?v=20260802-library14"></script>
+    <script src="app.js?v=20260802-icons1"></script>
 </body>
 
 </html>

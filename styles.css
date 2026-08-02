@@ -2764,14 +2764,13 @@ textarea {
     padding: var(--spacing-lg);
     display: grid;
     grid-template-columns: repeat(2, 1fr);
+    /* Satirlar icerik yuksekligi kadar olsun; sabit/esnek satirda
+       poster (padding-top:150%) tasip kartlar ust uste biniyordu */
+    grid-auto-rows: max-content;
     gap: var(--spacing-md);
     align-content: start;
 }
 
-/* Satirlar icerik kadar yer kaplasin, kalan alana yayilip kuculmesin */
-.library-panel-body .poster-card {
-    align-self: start;
-}
 
 /* Kutuphane bosken gosterilen mesaj */
 .library-empty {
@@ -2805,9 +2804,12 @@ textarea {
     font-size: 0.85rem;
 }
 
-/* Panel icindeki kartlar biraz daha kompakt */
+/* Panel icindeki kartlar biraz daha kompakt.
+   flex-grow sifirlanir: satir yuksekligi max-content oldugu icin
+   bilgi alaninin esnemesine gerek yok. */
 .library-panel-body .poster-info {
     padding: var(--spacing-sm);
+    flex-grow: 0;
 }
 
 /* Panel kartlari dar oldugu icin "Detay icin tikla" satira sigmiyor,

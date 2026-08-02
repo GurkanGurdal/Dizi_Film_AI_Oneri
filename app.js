@@ -226,6 +226,7 @@ async function init() {
     loadHistory();
     loadLibrary();
     setupEventListeners();
+    setupTopBarScroll();
     setupTrendingTabs();
     
     // Server health check (cold start handling)
@@ -1778,6 +1779,41 @@ function renderLibrary() {
             </div>
         `;
     }).join('');
+}
+
+// Sayfa kaydirilinca ust bar cam efektiyle belirir; tepedeyken saydam
+// kalir ki bastaki buyuk baslikla gorsel olarak cakismasin.
+function setupTopBarScroll() {
+    const bar = document.getElementById('topBar');
+    if (!bar) return;
+
+    const SCROLL_THRESHOLD = 40;
+    let ticking = false;
+
+    const update = () => {
+        const scrolled = (window.scrollY || window.pageYOffset) > SCROLL_THRESHOLD;
+        bar.classList.toggle('scrolled', scrolled);
+        ticking = false;
+    };
+
+    window.addEventListener('scroll', () => {
+        // rAF ile sinirla: scroll her pikselde tetikleniyor
+        if (!ticking) {
+            ticking = true;
+            window.requestAnimationFrame(update);
+        }
+    }, { passive: true });
+
+    update(); // sayfa kayitli konumda acilmis olabilir
+
+    // Marka linki: URL'ye # eklemeden yumusak sekilde basa doner
+    const brand = bar.querySelector('.top-bar-brand');
+    if (brand) {
+        brand.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
 }
 
 // Kutuphane panelindeki Tumu / Filmler / Diziler filtresini degistirir

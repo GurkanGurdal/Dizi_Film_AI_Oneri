@@ -2406,18 +2406,28 @@ textarea {
    Film Kütüphanem - Float Buton + Yan Panel
    ======================================== */
 
-/* Sayfanin ustunde sabit duran ince bar */
+/* Sayfanin ustunde sabit duran ince bar.
+   Sayfa tepedeyken saydam durur (bastaki dev baslikla cakismasin),
+   asagi kaydirilinca cam efektiyle belirir. */
 .top-bar {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    height: 56px;
-    background: rgba(10, 10, 20, 0.72);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--border-color);
+    height: 60px;
+    background: transparent;
+    border-bottom: 1px solid transparent;
+    transition: background var(--transition-normal),
+                border-color var(--transition-normal),
+                backdrop-filter var(--transition-normal);
     z-index: 800;
+}
+
+.top-bar.scrolled {
+    background: rgba(18, 18, 26, 0.7);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border-bottom-color: var(--border-color);
 }
 
 .top-bar-inner {
@@ -2431,6 +2441,8 @@ textarea {
     gap: var(--spacing-md);
 }
 
+/* Marka sadece bar belirdiginde gorunur; tepedeyken sayfa basligi
+   zaten ayni ismi buyuk puntoyla gosteriyor, tekrar olmasin */
 .top-bar-brand {
     display: flex;
     align-items: center;
@@ -2438,53 +2450,77 @@ textarea {
     text-decoration: none;
     color: var(--text-primary);
     min-width: 0;
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity var(--transition-normal), transform var(--transition-normal);
+}
+
+.top-bar.scrolled .top-bar-brand {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.top-bar-brand:hover .top-bar-name {
+    color: var(--accent-primary);
 }
 
 .top-bar-logo {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     object-fit: contain;
     flex-shrink: 0;
 }
 
 .top-bar-name {
-    font-size: 0.95rem;
-    font-weight: 700;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    transition: color var(--transition-fast);
 }
 
 /* Sabit bar sayfanin ustunu kapatmasin */
 .container {
-    padding-top: calc(56px + var(--spacing-lg));
+    padding-top: calc(60px + var(--spacing-lg));
 }
 
-/* Kutuphane acma butonu (bar icinde) */
+/* Kutuphane acma butonu - ikincil, cam yuzeyli.
+   Sayfadaki asil eylem butonuyla (AI'dan Oneri Iste) yarismasin diye
+   dolu gradient yerine sakin bir gorunum. */
 .library-fab {
     display: inline-flex;
     align-items: center;
     gap: var(--spacing-sm);
-    padding: var(--spacing-xs) var(--spacing-md);
-    background: var(--accent-gradient);
-    border: none;
+    padding: 7px var(--spacing-md);
+    background: var(--bg-glass);
+    border: 1px solid var(--bg-glass-border);
     border-radius: var(--radius-full);
-    color: #fff;
+    color: var(--text-primary);
     font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 500;
     font-family: inherit;
     cursor: pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     transition: var(--transition-fast);
     flex-shrink: 0;
 }
 
 .library-fab:hover {
-    box-shadow: 0 4px 16px var(--accent-glow);
+    background: var(--bg-card-hover);
+    border-color: var(--border-active);
     transform: translateY(-1px);
 }
 
+/* Panel aciksa buton vurgulu durur */
 .library-fab.panel-open {
-    box-shadow: 0 0 0 2px var(--accent-primary) inset;
+    background: rgba(99, 102, 241, 0.16);
+    border-color: var(--border-active);
+    color: var(--accent-primary);
 }
 
 .library-fab-icon {
@@ -2495,11 +2531,11 @@ textarea {
 /* Kayitli yapim sayisi rozeti */
 .library-fab-count {
     min-width: 20px;
-    padding: 1px 6px;
+    padding: 1px 7px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.28);
+    background: var(--accent-gradient);
     border-radius: var(--radius-full);
     color: #fff;
     font-size: 0.72rem;

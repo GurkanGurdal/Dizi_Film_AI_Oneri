@@ -11,6 +11,9 @@ const BACKEND_URL = window.location.hostname === 'localhost' || window.location.
 // TMDB Image Base URL (poster gösterimi için)
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 
+// Kullaniciya gosterilecek oneri sayisi
+const RECOMMENDATION_COUNT = 6;
+
 // Cold Start Fun Facts
 const COLD_START_FACTS = [
     "💡 Biliyor muydunuz? Film makaraları saniyede 24 kare gösterir!",
@@ -1130,14 +1133,15 @@ async function getRecommendation() {
 
             if (recommendations.length > 0) {
                 // Step 2: Fetch poster data from TMDB
-                const { items, skipped } = await fetchTMDBData(recommendations);
+                const { items } = await fetchTMDBData(recommendations);
                 let enrichedRecommendations = items;
 
-                // Step 2b: Uydurma cikan oneriler elendiyse yerlerine yenilerini iste
-                if (skipped.length > 0) {
+                // Step 2b: Eksik varsa (uydurma elendi ya da AI az oneri verdi)
+                // hedef sayiya ulasana kadar yenilerini iste
+                if (enrichedRecommendations.length < RECOMMENDATION_COUNT) {
                     enrichedRecommendations = await backfillRecommendations(
                         enrichedRecommendations,
-                        recommendations.length,
+                        RECOMMENDATION_COUNT,
                         userPrompt
                     );
                 }
@@ -1213,7 +1217,7 @@ Uydurma isim verirsen öneri kullanılamaz.
 Yanıtını SADECE JSON formatında ver:
 [{"title": "Orijinal ad", "titleTr": "Türkçe ad", "year": "Yıl", "reason": "Kısa sebep"}]
 
-5 adet ${contentType} öner. SADECE JSON ver, başka yazı YAZMA!`;
+${RECOMMENDATION_COUNT} adet ${contentType} öner. SADECE JSON ver, başka yazı YAZMA!`;
 
     return prompt;
 }

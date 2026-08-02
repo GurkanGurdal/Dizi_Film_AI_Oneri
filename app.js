@@ -1575,23 +1575,42 @@ function displayError(message) {
 const LIBRARY_STORAGE_KEY = 'movieLibrary';
 
 function loadLibrary() {
+    let raw = null;
     try {
-        const saved = localStorage.getItem(LIBRARY_STORAGE_KEY);
-        state.library = saved ? JSON.parse(saved) : [];
-        if (!Array.isArray(state.library)) state.library = [];
+        raw = localStorage.getItem(LIBRARY_STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(parsed)) throw new Error('Beklenen dizi degil');
+        state.library = parsed;
     } catch (error) {
-        console.warn('Kutuphane okunamadi:', error.message);
+        console.error('Kutuphane okunamadi:', error.message);
         state.library = [];
+
+        // Bozuk veriyi ustune yazip yok etmek yerine yedek anahtara tasi.
+        // Boylece elle kurtarma sansi kalir (localStorage'da movieLibrary.corrupt).
+        if (raw) {
+            try {
+                localStorage.setItem(LIBRARY_STORAGE_KEY + '.corrupt', raw);
+                localStorage.removeItem(LIBRARY_STORAGE_KEY);
+                console.warn('Bozuk kutuphane verisi ' + LIBRARY_STORAGE_KEY +
+                             '.corrupt anahtarina tasindi.');
+            } catch (e) {
+                console.warn('Bozuk veri yedeklenemedi:', e.message);
+            }
+        }
     }
     renderLibrary();
 }
 
+// Kayit basarili olduysa true doner. Basarisizsa cagiran taraf degisikligi
+// geri alabilsin diye false doner; boylece ekranda kaydedilmemis bir yapim
+// gorunmez (sayfa yenilenince kaybolan "hayalet kayit" olusmaz).
 function persistLibrary() {
     try {
         localStorage.setItem(LIBRARY_STORAGE_KEY, JSON.stringify(state.library));
+        return true;
     } catch (error) {
-        // Kota dolabilir; kullaniciyi engellemek yerine uyar
-        console.warn('Kutuphane kaydedilemedi:', error.message);
+        console.error('Kutuphane kaydedilemedi:', error.message);
+        return false;
     }
 }
 
@@ -1627,7 +1646,15 @@ function addToLibrary(movie) {
         addedAt: new Date().toLocaleString('tr-TR')
     });
 
-    persistLibrary();
+    if (!persistLibrary()) {
+        // Kayit basarisiz (kota dolu / depolama kapali): eklemeyi geri al ki
+        // kullanici kaydedilmemis bir yapimi kutuphanesinde saniyormis gibi olmasin
+        state.library.shift();
+        alert('Kütüphaneye eklenemedi. Tarayıcı depolama alanı dolu olabilir; ' +
+              'birkaç yapımı çıkarmayı deneyin.');
+        return false;
+    }
+
     renderLibrary();
     return true;
 }

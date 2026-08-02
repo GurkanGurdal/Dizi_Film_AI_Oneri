@@ -15,11 +15,11 @@ const TMDB_API_KEY = process.env.TMDB_API_KEY;
 
 // Available models
 const FREE_MODELS = [
-    'openai/gpt-4.1-mini',
-    'google/gemma-3-1b-it:free',
-    'google/gemma-3-4b-it:free',
-    'meta-llama/llama-3.2-3b-instruct:free',
-    'mistralai/mistral-7b-instruct:free'
+    'openai/gpt-oss-20b:free',
+    'google/gemma-4-31b-it:free',
+    'google/gemma-4-26b-a4b-it:free',
+    'nvidia/nemotron-3-super-120b-a12b:free',
+    'nvidia/nemotron-3-nano-30b-a3b:free'
 ];
 
 let currentModelIndex = 0;
@@ -53,6 +53,7 @@ app.post('/api/recommend', async (req, res) => {
 
         let response = null;
         let lastError = null;
+        const failures = [];
 
         // Try different models
         for (let i = 0; i < FREE_MODELS.length; i++) {
@@ -83,15 +84,21 @@ app.post('/api/recommend', async (req, res) => {
                 } else {
                     const errorData = await response.json().catch(() => ({}));
                     lastError = errorData.error?.message || `API Hatası: ${response.status}`;
+                    failures.push(`${model}: ${lastError}`);
                     console.log(`Model ${model} failed:`, lastError);
                 }
             } catch (e) {
                 lastError = e.message;
+                failures.push(`${model}: ${e.message}`);
                 console.log(`Model ${model} error:`, e.message);
             }
         }
 
-        res.status(500).json({ error: lastError || 'Tüm modeller başarısız oldu' });
+        console.error('Tüm modeller başarısız:', failures);
+        res.status(500).json({
+            error: lastError || 'Tüm modeller başarısız oldu',
+            failures
+        });
 
     } catch (error) {
         console.error('Recommend error:', error);

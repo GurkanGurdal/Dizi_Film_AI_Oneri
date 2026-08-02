@@ -1207,6 +1207,9 @@ Eğer kullanıcının isteği yukarıdaki seçimlerle çelişiyorsa, KULLANICINI
 
     prompt += `
 
+ÖNEMLİ: Sadece GERÇEKTEN VAR OLAN yapımları öner. Emin olmadığın isimleri YAZMA.
+Uydurma isim verirsen öneri kullanılamaz.
+
 Yanıtını SADECE JSON formatında ver:
 [{"title": "Orijinal ad", "titleTr": "Türkçe ad", "year": "Yıl", "reason": "Kısa sebep"}]
 

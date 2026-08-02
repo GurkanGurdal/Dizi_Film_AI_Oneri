@@ -1360,7 +1360,9 @@ async function fetchTMDBData(recommendations) {
                     overview: null,
                     rating: null,
                     reason: rec.reason,
-                    tmdbUrl: `https://www.google.com/search?q=${encodeURIComponent(rec.title + ' izle')}`,
+                    // TMDB'de bulunamadi: link yok, boylece "TMDB'de Goruntule"
+                    // butonu gizlenir (Google'a yonlendirmek yaniltici oluyordu)
+                    tmdbUrl: null,
                     providers: [],
                     mediaType: searchType
                 });
@@ -1374,7 +1376,8 @@ async function fetchTMDBData(recommendations) {
                 year: rec.year,
                 poster: null,
                 reason: rec.reason,
-                tmdbUrl: `https://www.google.com/search?q=${encodeURIComponent(rec.title + ' izle')}`,
+                // TMDB verisi alinamadi: link yok, buton gizlenir
+                tmdbUrl: null,
                 providers: [],
                 mediaType: searchType
             });
@@ -1627,8 +1630,14 @@ function openMovieModal(indexOrMovie) {
     const searchTitle = movie.titleTr || movie.title;
     modalWatchBtn.href = `https://www.google.com/search?q=${encodeURIComponent(searchTitle)}`;
 
-    // Set TMDB link
-    modalTmdbLink.href = movie.tmdbUrl;
+    // Set TMDB link - film TMDB'de bulunamadiysa butonu gosterme
+    if (movie.tmdbUrl) {
+        modalTmdbLink.href = movie.tmdbUrl;
+        modalTmdbLink.style.display = '';
+    } else {
+        modalTmdbLink.removeAttribute('href');
+        modalTmdbLink.style.display = 'none';
+    }
 
     // Set Trailer button
     const modalTrailerBtn = document.getElementById('modalTrailerBtn');

@@ -2686,8 +2686,10 @@ textarea {
 
 /* Film / Dizi filtresi - trend sekmeleriyle ayni pill switch dili */
 .library-filter-wrap {
-    padding: var(--spacing-md) var(--spacing-lg) 0;
+    padding: var(--spacing-md) var(--spacing-lg);
     flex-shrink: 0;
+    /* Filtre ile kart listesi arasinda gorsel ayrim */
+    border-bottom: 1px solid var(--border-color);
 }
 
 .library-tabs {
@@ -2761,14 +2763,41 @@ textarea {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: var(--spacing-lg);
+    overflow-x: hidden;
+    /* Altta ekstra bosluk: son satir footer'a yapisik bitmesin */
+    padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-xl);
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     /* Satirlar icerik yuksekligi kadar olsun; sabit/esnek satirda
        poster (padding-top:150%) tasip kartlar ust uste biniyordu */
     grid-auto-rows: max-content;
-    gap: var(--spacing-md);
+    gap: var(--spacing-lg) var(--spacing-md);
     align-content: start;
+    /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+/* WebKit: ince, yuvarlak, sadece uzerine gelince belirginlesen scrollbar */
+.library-panel-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.library-panel-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.library-panel-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.14);
+    border-radius: var(--radius-full);
+    /* Kenarlardan bosluk birakip daha ince gostermek icin */
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+.library-panel-body::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary);
+    background-clip: content-box;
 }
 
 

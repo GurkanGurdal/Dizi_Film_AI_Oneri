@@ -2457,10 +2457,11 @@ textarea {
     transition: color var(--transition-fast);
 }
 
-/* Masaustunde buton sag altta yuzer: bar akistan cikarilir */
+/* Masaustunde buton sol altta yuzer: bar akistan cikarilir.
+   Panel de soldan acildigi icin buton ve panel ayni tarafta. */
 .library-fab {
     position: fixed;
-    right: var(--spacing-lg);
+    left: var(--spacing-lg);
     bottom: var(--spacing-lg);
     display: inline-flex;
     align-items: center;

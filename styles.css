@@ -4717,16 +4717,42 @@ textarea {
     color: var(--accent-primary);
 }
 
-/* Yapim zaten kutuphanedeyse vurgulu ama ayni olcude kalir */
+/* Kutuphanedeyse dolu gradient gorunum */
 .modal-library-btn.in-library {
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
-    background: var(--bg-card-hover);
+    background: var(--accent-gradient);
+    border-color: transparent;
+    color: #fff;
+}
+
+.modal-library-btn.in-library:hover {
+    background: var(--accent-gradient);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 4px 15px var(--accent-glow);
 }
 
 .modal-library-btn .library-icon {
     font-size: 0.9rem;
     line-height: 1;
+    display: inline-block;
+}
+
+/* Eklendigi an ikonun kisa onay animasyonu */
+.modal-library-btn.just-added .library-icon {
+    animation: libraryPop 0.45s ease;
+}
+
+@keyframes libraryPop {
+    0% { transform: scale(0.4) rotate(-25deg); opacity: 0.4; }
+    55% { transform: scale(1.35) rotate(8deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+/* Hareket azaltma tercihi olan kullanicilar icin animasyonu kapat */
+@media (prefers-reduced-motion: reduce) {
+    .modal-library-btn.just-added .library-icon {
+        animation: none;
+    }
 }
 
 /* Trailer Modal */

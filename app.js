@@ -1733,8 +1733,10 @@ function openLibraryMovie(index) {
     }
 }
 
-// Modaldaki "Kutuphaneye Ekle" butonunun gorunumunu gunceller
-function updateLibraryButton(movie) {
+// Modaldaki "Kutuphaneye Ekle" butonunun gorunumunu gunceller.
+// animate=true sadece ekleme aninda verilir; modal her acildiginda
+// animasyonun tekrar oynamamasi icin varsayilan false.
+function updateLibraryButton(movie, animate = false) {
     const btn = document.getElementById('modalLibraryBtn');
     if (!btn) return;
 
@@ -1745,14 +1747,23 @@ function updateLibraryButton(movie) {
         ? 'Kütüphanemde'
         : 'Kütüphaneye Ekle';
 
+    // Animasyon yalnizca ekleme aninda oynar. Sinif her cagride once
+    // temizlenir; aksi halde modal yeniden acildiginda animasyon tekrarlardi.
+    btn.classList.remove('just-added');
+    if (animate && inLibrary) {
+        void btn.offsetWidth; // reflow: animasyonun yeniden tetiklenmesini saglar
+        btn.classList.add('just-added');
+    }
+
     // Her acilista yeni film icin dinleyici kurulur; eskisini temizle
     btn.onclick = () => {
+        let added = false;
         if (isInLibrary(movie)) {
             removeFromLibrary(getLibraryKey(movie));
         } else {
-            addToLibrary(movie);
+            added = addToLibrary(movie);
         }
-        updateLibraryButton(movie);
+        updateLibraryButton(movie, added);
     };
 }
 

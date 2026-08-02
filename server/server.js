@@ -73,7 +73,10 @@ app.post('/api/recommend', async (req, res) => {
                         model: model,
                         messages: [{ role: 'user', content: prompt }],
                         max_tokens: 4096,
-                        temperature: 0.7
+                        temperature: 0.7,
+                        // gpt-oss gibi reasoning modelleri cevaptan once dusunme
+                        // tokeni uretiyor; JSON'a katkisi yok, sadece sureyi uzatiyor
+                        reasoning: { enabled: false }
                     })
                 });
 
@@ -152,7 +155,9 @@ ${text}`;
                         model: model,
                         messages: [{ role: 'user', content: translatePrompt }],
                         max_tokens: 2048,
-                        temperature: 0.3
+                        temperature: 0.3,
+                        // Ceviri icin de dusunme tokeni gereksiz
+                        reasoning: { enabled: false }
                     })
                 });
 
